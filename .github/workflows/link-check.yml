@@ -1,0 +1,113 @@
+name: link-check
+
+on:
+  schedule:
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+  # ci.yml does not look at external URLs, so this is where a newly added URL is
+  # checked first. Run it on pushes to main too, so a mistake surfaces right after
+  # the merge instead of at the next scheduled run.
+  push:
+    branches: [main]
+
+# Do not start a run until the previous one finishes, and do not cancel the one in
+# flight (hitting the same links from two runs at once gains nothing, and cancelling
+# means that run's result never reaches the issue).
+concurrency:
+  group: link-check
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4
+        with:
+          version: 2026.8.8
+          install_args: lychee
+          cache_save: ${{ github.event_name == 'push' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Check external links
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -eo pipefail
+          # --mode plain: no colors, because this output goes into the issue body as
+          #   is (the default color mode mixes ANSI escapes into the body).
+          # The default shell is bash -e without pipefail, so it is set explicitly
+          # above (without it tee's exit code is used and a failed check would look
+          # like a success).
+          lychee \
+            --no-progress \
+            --mode plain \
+            --exclude 'OWNER/REPO' \
+            . 2>&1 | tee "${RUNNER_TEMP}/lychee.log"
+
+      # steps.check.outcome is part of the condition so that a failure in another
+      # step, such as checkout, does not open a bogus "broken links" issue.
+      - name: Open an issue on broken links
+        if: failure() && steps.check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: External links are broken
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/link-check.yml
+          WORKFLOW_FILE_URL: ${{ github.server_url }}/${{ github.repository }}/blob/main/.github/workflows/link-check.yml
+        run: |
+          set -eo pipefail
+          existing="$(gh issue list --state open --limit 100 --json number,title \
+            | jq -r --arg t "${TITLE}" 'map(select(.title == $t)) | if length > 0 then .[0].number else empty end')"
+          if [ -n "${existing}" ]; then
+            echo "issue #${existing} already exists, not creating another"
+            exit 0
+          fi
+          {
+            echo "The [\`link-check\`](${WORKFLOW_URL}) check failed."
+            echo
+            echo "Run log: ${RUN_URL}"
+            echo
+            echo '```'
+            cat "${RUNNER_TEMP}/lychee.log"
+            echo '```'
+            echo
+            echo "If a link target has moved, update the link where it is referenced. You can run the same check locally with:"
+            echo
+            echo '```bash'
+            echo "lychee --no-progress --exclude 'OWNER/REPO' ."
+            echo '```'
+            echo
+            echo "For URLs that can never be checked, for example because the target started blocking bots,"
+            echo "add them to \`--exclude\` in [\`.github/workflows/link-check.yml\`](${WORKFLOW_FILE_URL})."
+            echo
+            echo "Once fixed, this issue closes automatically on the next run."
+          } >"${RUNNER_TEMP}/issue.md"
+          url="$(gh issue create --title "${TITLE}" --body-file "${RUNNER_TEMP}/issue.md")"
+          gh issue edit "${url}" --add-label maintenance ||
+            echo "::warning::Could not add the maintenance label. Check whether it still exists (./scripts/sync-repo-config.sh can create it)"
+
+      # When the check fails, execution never reaches this step (it is skipped by
+      # default because the previous step failed).
+      - name: Close the issue when the links are fixed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: External links are broken
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -eo pipefail
+          numbers="$(gh issue list --state open --limit 100 --json number,title \
+            | jq -r --arg t "${TITLE}" '.[] | select(.title == $t) | .number')"
+          for number in ${numbers}; do
+            gh issue close "${number}" --comment "Closing because the check passed: ${RUN_URL}"
+          done

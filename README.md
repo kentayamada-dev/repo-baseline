@@ -1,0 +1,318 @@
+# repo-baseline
+
+**English** | [日本語](README.ja.md)
+
+A template repository providing the groundwork for repository operations: branch protection and a CI workflow built to be extended.
+
+**It contains no application code.** The application itself is built in a repository created from this template ([After adding application code](docs/ci-jobs.md#after-adding-application-code)). **It is for public repositories only** (the conditions for using rulesets and Code scanning differ on private ones).
+
+## How to read this
+
+You only need to read these two sections up front.
+
+- [Setup](#setup) — the one-time work right after creating a repository from the template
+- [Development flow](#development-flow) — how PRs are handled day to day
+
+The rest is reference material to look up when you need it.
+
+- [What's included](#whats-included) — the list of files in the repository
+- [Settings drift check](docs/drift-check.md#settings-drift-check) — the daily check that repository settings have not drifted from the definitions
+- [Releases](#releases) — the constraints immutable releases impose
+- [CI check jobs](docs/ci-jobs.md#ci-check-jobs) — look up the relevant section when a check fails or when you add a job
+- [Renovate](docs/renovate.md#renovate) — automated dependency updates
+- [Troubleshooting](docs/troubleshooting.md#troubleshooting) — look up by symptom
+
+## What's included
+
+| Path | Description |
+| --- | --- |
+| [.github/rulesets/main.json](.github/rulesets/main.json) | The branch protection definition for main (a GitHub Repository Ruleset) |
+| [scripts/sync-repo-config.sh](scripts/sync-repo-config.sh) | A script that applies and checks the ruleset above together with the repository settings |
+| [.github/workflows/ci.yml](.github/workflows/ci.yml) | CI. The gate job `ci` that serves as the required check, plus the check jobs ([list](docs/ci-jobs.md#ci-check-jobs)) |
+| [.github/workflows/osv-scanner.yml](.github/workflows/osv-scanner.yml) | Scheduled scan for known vulnerabilities in dependencies (daily / [osv-scanner](docs/ci-jobs.md#osv-scanner)) |
+| [.github/workflows/repo-settings.yml](.github/workflows/repo-settings.yml) | Scheduled check for drift in repository settings and rulesets (daily / [Settings drift check](docs/drift-check.md#settings-drift-check)) |
+| [.github/workflows/link-check.yml](.github/workflows/link-check.yml) | Scheduled check of the external links in the documentation (daily / [Scheduled external link checks](docs/ci-jobs.md#scheduled-external-link-checks)) |
+| [.github/workflows/renovate.yml](.github/workflows/renovate.yml) | Runs Renovate ([The update list issue](docs/renovate.md#the-update-list-issue)) |
+| [.github/renovate.json5](.github/renovate.json5) | Renovate configuration |
+| [.github/pull_request_template.md](.github/pull_request_template.md) | The PR body template |
+| [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE) | Issue templates (bug report / task) |
+| [CLAUDE.md](CLAUDE.md) | Instructions Claude Code reads. Replace it using the template below |
+| [CLAUDE.template.md](CLAUDE.template.md) | Template for writing your own CLAUDE.md ([日本語版](CLAUDE.template.ja.md)) |
+| [mise.toml](mise.toml) | Versions of the check tools used in CI and locally |
+| [.markdownlint-cli2.jsonc](.markdownlint-cli2.jsonc) | Configuration for markdownlint-cli2, the Markdown format checker |
+| [.typos.toml](.typos.toml) | Configuration for typos, the typo checker |
+| [.editorconfig](.editorconfig) | Editor-side formatting settings (indentation / line endings / encoding) |
+| [.gitattributes](.gitattributes) | The git setting that fixes line endings to LF |
+| [.gitignore](.gitignore) | What git does not track (it also excludes those paths from typos) |
+| [docs/drift-check.md](docs/drift-check.md) | Reference: the settings drift check and `SETTINGS_TOKEN` |
+| [docs/ci-jobs.md](docs/ci-jobs.md) | Reference: the CI check jobs |
+| [docs/renovate.md](docs/renovate.md) | Reference: Renovate |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Reference: troubleshooting |
+| [SECURITY.md](SECURITY.md) | Where to report vulnerabilities and what is in scope |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | The contributing guide (GitHub shows it on the issue / PR creation pages) |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Code of conduct (based on Contributor Covenant v2.1) |
+| [LICENSE](LICENSE) | The MIT license |
+| `*.ja.md` | The Japanese versions: [README.ja.md](README.ja.md) and the four files under `docs/`. The `.md` of the same name is the English original |
+
+Only this README and the files under `docs/` are translated, and **the English is the authoritative version** ([Bilingual documentation](CONTRIBUTING.md#bilingual-documentation)). Everything a tool emits or matches on stays English-only: the script's `--help` and runtime output, the notification issue titles, the issue and PR templates, workflow step names, and code comments. That is why this document quotes markers such as `DRIFT` and `UNKNOWN` in English.
+
+## Setup
+
+One-time work to do right after creating your own repository from the template.
+
+1. **Run the setup script** (just below)
+2. **Commit the [config.yml](.github/ISSUE_TEMPLATE/config.yml) the script rewrote** — GitHub reads the file on main, so the link inside the issue template does not change until you commit it ([Issue templates](#issue-templates))
+3. **Register the `SETTINGS_TOKEN` secret** ([how to create it](docs/drift-check.md#creating-settings_token)) — without it the [settings drift check](docs/drift-check.md#settings-drift-check) fails with "UNKNOWN" and opens an issue
+4. **If you use [Renovate](docs/renovate.md#renovate), register the `RENOVATE_TOKEN` secret** ([how to create it](docs/renovate.md#registering-the-token)) — without it the Monday scheduled run fails and opens an issue
+
+Prerequisites: [gh](https://cli.github.com/) and [jq](https://jqlang.github.io/jq/), with `gh auth login` already done.
+
+```bash
+./scripts/sync-repo-config.sh
+```
+
+That enables everything below. Add `--dry-run` if you only want to see what would be sent.
+
+- Branch protection on main ([What branch protection enforces](#what-branch-protection-enforces))
+- Auto-merge and automatic branch deletion after merging
+- The "Update branch" suggestion on PRs that have fallen behind the base (being up to date before merging is required)
+- Restricting the merge method to squash only (merge commits / rebase are disabled)
+- Always using the PR title as the commit title on squash ([PR title format](#pr-title-format))
+- Enabling Discussions, Issues, and Projects (stated explicitly rather than relying on GitHub's defaults)
+- Creating only the missing issue and PR labels ([Labels](#labels))
+- Disabling the Wiki (it is unused: main protection and CI do not cover it, and it is not copied from a template)
+- Immutable releases ([Releases](#releases))
+- Private vulnerability reporting (received through a private channel rather than public issues)
+- Secret scanning push protection (a push that carries a credential is rejected before it lands, where [gitleaks](docs/ci-jobs.md#gitleaks) only reports what is already in the history)
+- Fixing the default permissions of the Actions `GITHUB_TOKEN` to read and forbidding `GITHUB_TOKEN` from creating or approving PRs (so the ceiling when a workflow forgets its `permissions` does not depend on the default)
+
+> The script refuses repositories that are not public.
+
+When applying this to an existing repository, a leftover classic branch protection on main applies alongside the ruleset and makes the behavior hard to follow. The script only warns and continues (`--dry-run` does not perform this check), so delete it if it is still there.
+
+```bash
+gh api --method DELETE repos/OWNER/REPO/branches/main/protection
+```
+
+### Runtime options
+
+Running it without arguments applies everything listed above, so you normally do not need these.
+
+| Option | Description |
+| --- | --- |
+| `--dry-run` | Only print what would be sent; change nothing in the repository |
+| `--check` | Only check whether the current settings match the definitions. Lists the differences and exits 1 on drift ([Settings drift check](docs/drift-check.md#settings-drift-check)) |
+| `-h` / `--help` | Print the usage (it prints the comment at the top of the [script](scripts/sync-repo-config.sh) as is) |
+| `REPO=<owner>/<repo>` | Specify the target repository. The default is derived from the `origin` remote |
+| `RULESET_FILE=<path>` | Apply only one ruleset. The default is to apply all of `.github/rulesets/*.json` |
+| `REPO_SETTINGS=false` | Apply only the ruleset, skipping the repository setting changes and the issue template rewrite |
+
+The last three are environment variables, not arguments.
+
+```bash
+./scripts/sync-repo-config.sh --help
+REPO_SETTINGS=false ./scripts/sync-repo-config.sh
+RULESET_FILE=.github/rulesets/main.json ./scripts/sync-repo-config.sh --dry-run
+```
+
+### What branch protection enforces
+
+| Item | Setting |
+| --- | --- |
+| Direct push to main | Forbidden |
+| PR | Required |
+| Approvals | 0 (self-merge allowed) |
+| Review threads | All must be resolved before merging |
+| CI (`ci`) | Required (only a report from GitHub Actions counts) |
+| Code scanning alerts | Block merging on any alert, whatever its severity ([CodeQL](docs/ci-jobs.md#codeql)) |
+| Up to date before merging | Required (click Update branch once the base moves ahead) |
+| Merge method | Squash only |
+| Signed commits | Required |
+| Linear history | Required (no merge commits) |
+| Deleting / force-pushing main | Forbidden |
+
+There is a single ruleset, [main.json](.github/rulesets/main.json), and it targets only `main`. Nothing applies to branches other than main, and no bypass is granted, not even to administrators. To change the settings, edit the JSON and run the script again (all of `.github/rulesets/*.json` is applied, and a ruleset of the same name is updated).
+
+Signed commits need setup on your side. The ruleset targets main alone, so pushing unsigned commits to a working branch succeeds, but the rule reads every commit in the pull request, not just the squash commit GitHub creates and signs on merge. A PR carrying an unsigned commit cannot be merged, not even by its own author. Prepare a GPG or SSH signing key ([Managing commit signature verification](https://docs.github.com/en/authentication/managing-commit-signature-verification)) and sign by default.
+
+```bash
+git config --global commit.gpgsign true
+```
+
+Zero approvals assumes a single maintainer. Once two or more people work on the repository, change the `pull_request` rule in the JSON: `required_approving_review_count` to 1, and `dismiss_stale_reviews_on_push` and `require_last_push_approval` to `true`. To require a review from the owner of the area that changed, add a `CODEOWNERS` file and turn on `require_code_owner_review` as well.
+
+## Development flow
+
+main is protected and cannot be pushed to directly. Every change lands through a PR.
+
+```bash
+git switch -c feat/xxx
+# make changes and commit
+git push -u origin HEAD
+gh pr create
+gh pr merge --auto
+```
+
+Zero approvals are required, so you can merge your own PR, but nothing merges until CI passes. Adding `gh pr merge --auto` merges automatically as soon as CI passes (since squash is the only enabled merge method, `--squash` is usually unnecessary).
+
+`gh pr create` opens your editor preloaded with the [PR template](.github/pull_request_template.md). Adding `--fill` fills the body from the commit messages and does not use the template. To write it in the browser, use `--web`, which opens the page with the template already in place.
+
+A PR whose base has moved ahead cannot be merged until it is brought up to date. Click "Update branch" on the PR page, or run `git merge origin/main` and push. CI runs again, and once it passes the PR can be merged.
+
+### PR title format
+
+PR titles are required to follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
+
+```text
+<type>(<scope>)!: <description>
+```
+
+| Element | Required | Description |
+| --- | --- | --- |
+| `type` | Required | One of `feat` `fix` `docs` `refactor` `test` `build` `ci` `perf` `chore` `revert` |
+| `(scope)` | Optional | The area that changed. Written like `fix(cli):` |
+| `!` | Optional | Added for a backward-incompatible change. `feat!:` |
+| `description` | Required | At least one character |
+
+```text
+feat: add a user search endpoint
+fix(cli): highlight that config.yml must be committed
+feat!: switch the config file format to TOML
+```
+
+Titles are constrained because the setting that always uses the PR title as the commit title on squash (`squash_merge_commit_title=PR_TITLE`) means **the PR title becomes the title of the commit that lands on main**. Only the title is constrained; the body is not checked. The commit messages you stacked locally are concatenated into the body of the squash commit and left on main.
+
+The validation is done by CI's `pr-title` job, and since it is part of the required check `ci` it cannot be bypassed. When it fails, fixing the PR title re-runs the check automatically (no new push needed). If you add or remove types, fix the `PATTERN` in [ci.yml](.github/workflows/ci.yml) and the table above together.
+
+Re-validation works because `edited` was added to the `types` of `pull_request`. With the default, fixing the title does not start the workflow and it stays failed. The cost is that [CodeQL](docs/ci-jobs.md#codeql) also runs on every title edit, but skipping only `codeql` with an `if` would let the gate job `ci`, which treats `skipped` as a success, paint the previous failure green, so that is not done.
+
+GitHub's default (`COMMIT_OR_PR_TITLE`) uses the commit's own title on a PR with a single commit, so dropping `PR_TITLE` means the title that `pr-title` validated may never land on main. That drift cannot be detected by `pr-title` (it looks at the PR title, not at what actually lands on main); the [settings drift check](docs/drift-check.md#settings-drift-check) catches it. To check locally, run:
+
+```bash
+gh api repos/OWNER/REPO --jq .squash_merge_commit_title   # must be PR_TITLE
+./scripts/sync-repo-config.sh --check              # checks the other settings and the ruleset too
+```
+
+### Consistent formatting
+
+Indentation, line endings, and trailing whitespace are kept consistent by three layers with different degrees of enforcement.
+
+| Mechanism | Enforcement | Role |
+| --- | --- | --- |
+| [.editorconfig](.editorconfig) | None (a hint) | Gets it right as you type. Silently ignored by editors without the plugin |
+| [.gitattributes](.gitattributes) | git normalizes | Fixes line endings to LF. Independent of editor settings and OS |
+| The `format` job in `ci` | Required check | Rejects violations on the PR (two tools: editorconfig-checker and shfmt) |
+
+The `format` job checks every item in `.editorconfig` using [editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker). `.editorconfig` is the single source of truth; the check items are not copied into CI.
+
+| Item checked | Description |
+| --- | --- |
+| `insert_final_newline` | Whether the file ends with a newline |
+| `end_of_line` | Whether CRLF has crept in |
+| `indent_style` | Whether tabs are used for indentation |
+| `indent_size` | Whether the indent width is a multiple of 2 (except `*.sh`) |
+| `trim_trailing_whitespace` | Whether lines end with whitespace (except `*.md`) |
+| `charset` | Whether it is UTF-8 |
+
+The tab check also prevents concrete breakage. YAML cannot use tabs for indentation by specification, so editing `ci.yml` in an environment whose editor defaults to tabs breaks the workflow.
+
+The same job has [shfmt](https://github.com/mvdan/sh) check the formatting of shell scripts.
+
+```bash
+git ls-files -z '*.sh' '*.bash' \
+  | xargs -0 -r shfmt -d -i 2 -ci
+```
+
+| Option | Reason |
+| --- | --- |
+| `-d` | Print the diff before and after formatting and exit 1 if there is one (it does not rewrite, unlike `-w`) |
+| `-i 2` | Indent with 2 spaces |
+| `-ci` | Indent the contents of `case` (the existing style in this repository) |
+
+Things to note about shfmt:
+
+- **Passing even one flag makes shfmt ignore `.editorconfig`.** The formatting of shell scripts is decided by these options alone. Options such as `-sr`, which puts spaces around redirects, are left off to match the existing style. To change that, add to these flags.
+- **Multiple statements put on one line separated by `;` are rewritten onto separate lines.** One-line guards such as `cmd || { echo "..." >&2; exit 1; }` are expanded too. There is no flag to disable it, so everything under `scripts/` is written in that expanded form.
+
+editorconfig-checker and shfmt are installed with mise and run like the other check tools ([Installing and verifying the tools](docs/ci-jobs.md#installing-and-verifying-the-tools), versions in [mise.toml](mise.toml)). You can run the same checks locally with the following. **The command name for editorconfig-checker is `ec`** (the `editorconfig-checker` written in [mise.toml](mise.toml) is the package name in the [aqua](https://aquaproj.github.io/) registry, which differs from the binary name).
+
+```bash
+ec
+git ls-files -z '*.sh' '*.bash' | xargs -0 -r shfmt -d -i 2 -ci
+```
+
+Changing `shfmt -d` to `shfmt -w` formats in place instead of printing the diff.
+
+#### Two exceptions
+
+`*.sh` is excluded from the `indent_size` check (`indent_size = unset` in `.editorconfig`). The contents of a heredoc are display text printed to the CLI, where aligning the width to a multiple of 2 is meaningless, but editorconfig-checker cannot tell heredoc content apart from code. The excluded files are still covered by shfmt in the same `format` job (shfmt does not format the contents of a heredoc, so it can check without any exclusion). The source of truth for indentation in `*.sh` is the shfmt flags, not `.editorconfig`.
+
+`*.md` is excluded from the trailing-whitespace check because in Markdown two trailing spaces mean a hard line break. Removing them uniformly would change the rendering. The excluded files are still covered by `MD009` in markdownlint-cli2 ([markdownlint-cli2](docs/ci-jobs.md#markdownlint-cli2)).
+
+### Issue templates
+
+There are two in [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE). Both are YAML issue forms. Labels are applied automatically ([Labels](#labels)).
+
+| Template | Purpose | Label applied automatically |
+| --- | --- | --- |
+| [Bug report](.github/ISSUE_TEMPLATE/bug_report.yml) | Something behaves incorrectly or raises an error | `bug` |
+| [Task](.github/ISSUE_TEMPLATE/task.yml) | A feature to add or work that needs doing | `enhancement` |
+
+**Anything that fits neither goes to Discussions.** The issue creation page shows an "Ask in Discussions" link. Once the discussion settles, "Create issue from discussion" on the Discussion page converts it into an issue.
+
+| What to use | When |
+| --- | --- |
+| Bug report issue | There is a clearly identified defect to fix |
+| Task issue | What to do is already decided |
+| Discussions | Questions, direction discussions, or anything you cannot classify as a bug or a request |
+
+Blank issues are forbidden by `blank_issues_enabled: false` in [config.yml](.github/ISSUE_TEMPLATE/config.yml), so every issue goes through one of the templates. That setting only removes the blank option from the issue creation page, though; the API route (including passing a title and body to `gh issue create`) goes straight through.
+
+**Do not write security problems in issues.** Private vulnerability reporting is enabled, so you can report privately from the Security tab ([SECURITY.md](SECURITY.md)).
+
+Since `contact_links` in `config.yml` only accepts absolute URLs, the template holds `https://github.com/OWNER/REPO/discussions/new/choose`, and the script in [Setup](#setup) rewrites it to the actual repository name. **The rewritten `config.yml` needs to be committed** (because GitHub reads the file on main). Fixing it by hand is fine too; in that case the script does nothing.
+
+The format is checked by the `issue-forms` job in `ci` using [check-jsonschema](https://github.com/python-jsonschema/check-jsonschema). A misspelled `type` or a misplaced `validations` is something GitHub only reveals at run time, and it shows up as **the template disappearing from the issue creation page**. The schema applied is the one from [SchemaStore](https://www.schemastore.org/), bundled with the tool itself, so changes on GitHub's side are picked up by updating the tool version.
+
+You can run the same check locally with the following. `config.yml` configures the template chooser rather than a form, and its schema is different, so it is checked separately. Both extensions are covered because GitHub accepts `.yml` and `.yaml` alike.
+
+```bash
+git ls-files -z '.github/ISSUE_TEMPLATE/*.yml' '.github/ISSUE_TEMPLATE/*.yaml' \
+  ':!:.github/ISSUE_TEMPLATE/config.yml' ':!:.github/ISSUE_TEMPLATE/config.yaml' \
+  | xargs -0 -r check-jsonschema --builtin-schema vendor.github-issue-forms
+git ls-files -z '.github/ISSUE_TEMPLATE/config.yml' '.github/ISSUE_TEMPLATE/config.yaml' \
+  | xargs -0 -r check-jsonschema --builtin-schema vendor.github-issue-config
+```
+
+Placing no templates at all is a legitimate choice, so when there is nothing to check it passes without checking. The flip side is that moving them out of `.github/ISSUE_TEMPLATE/` turns the job green with nothing to check.
+
+### Labels
+
+The script in [Setup](#setup) creates four labels. None of them are applied by hand.
+
+| Label | Applied to | Where it is applied |
+| --- | --- | --- |
+| `bug` | Bug report issues | `labels` in [bug_report.yml](.github/ISSUE_TEMPLATE/bug_report.yml) |
+| `enhancement` | Task issues | `labels` in [task.yml](.github/ISSUE_TEMPLATE/task.yml) |
+| `dependencies` | Renovate update PRs / the update list issue | `labels` in [renovate.json5](.github/renovate.json5) / `gh issue edit --add-label` in [renovate.yml](.github/workflows/renovate.yml) |
+| `maintenance` | Notification issues opened by failed scheduled checks | `gh issue edit --add-label` in each workflow |
+
+`maintenance` exists so that, when browsing issues, bugs reported by people can be distinguished from maintenance work found by automated checks. It expresses the kind of content, not "who created it" (notification issues can be filtered with `author:app/github-actions`).
+
+Labels are applied to notification issues with `gh issue edit --add-label` after creation rather than with `--label` on `gh issue create` because `gh` exits with an error when the label is missing. Passing it to `create` would mean the issue itself is never opened, losing the means of notification. When the label cannot be applied, only a warning is printed and the notification itself survives.
+
+The [settings drift check](docs/drift-check.md#settings-drift-check) verifies daily that the labels have not been deleted (on the issue template side, GitHub silently ignores a nonexistent label, so a deletion goes unnoticed). When changing `labels` in a template or in `renovate.json5`, fix `LABELS_EXPECTED` in the script to match (the check only looks at the definitions in the script).
+
+## Releases
+
+Because immutable releases are enabled, a release published after enabling them cannot be changed afterwards.
+
+- Replacing, adding, or deleting release assets is not possible
+- Re-pointing or deleting that release's tag is not possible either
+- When a fix is needed, publish it as a new version instead
+
+The guarantee that the contents behind a given tag never change is a supply-chain safeguard. To disable it, run `gh api --method DELETE repos/OWNER/REPO/immutable-releases`.
+
+## License
+
+MIT ([LICENSE](LICENSE))

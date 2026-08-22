@@ -345,8 +345,6 @@ gh auth status >/dev/null 2>&1 || {
 if [[ -n "${RULESET_FILE:-}" ]]; then
   RULESET_FILES=("$RULESET_FILE")
 else
-  # nullglob: prevents the pattern string itself from remaining as an element when
-  # nothing matches.
   shopt -s nullglob
   RULESET_FILES=("$RULESET_DIR"/*.json)
   shopt -u nullglob
@@ -483,8 +481,6 @@ done
 
 if [[ "$REPO_SETTINGS" == true ]]; then
   echo "updating the repository settings (auto-merge / delete branch on merge / update branch / squash only / squash title)"
-  # -F sends true/false and numbers as the matching JSON type, and anything else as a
-  # string.
   patch_args=()
   for kv in "${REPO_SETTINGS_EXPECTED[@]}"; do
     read -r rest_key _ want <<<"$kv"

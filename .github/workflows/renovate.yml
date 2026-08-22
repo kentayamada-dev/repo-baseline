@@ -21,9 +21,7 @@ on:
         options: [info, debug]
         default: info
 
-# Do not start a run until the previous one finishes: two runs processing the same
-# repository at once would conflict over branch creation and rebasing. Do not
-# cancel the run in flight.
+# Serialized: two runs at once would conflict over branch creation and rebasing.
 concurrency:
   group: renovate
   cancel-in-progress: false
@@ -162,8 +160,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      # Pass the warning details through env. Expanding them inside run: would let the
-      # shell interpret the log contents.
+      # Log contents are external text, so they go through env, not run.
       - name: Open or update the issue
         if: needs.renovate.outputs.lookup_failed == 'true'
         env:
@@ -233,8 +230,7 @@ jobs:
       issues: write
       pull-requests: read
     steps:
-      # Pass PR titles to jq through a file. Expanding them inside run: would let the
-      # shell interpret the title contents.
+      # PR titles are external text, so they reach jq through a file, not run.
       - name: List open update PRs
         id: list
         env:

@@ -46,9 +46,7 @@ jobs:
     steps:
       - name: Validate PR title
         env:
-          # Anyone can write anything in a PR title. Embedding it directly in run
-          # allows shell metacharacter injection and arbitrary code execution, so
-          # always pass it through env.
+          # A PR title is attacker-controlled text, so it goes through env, not run.
           TITLE: ${{ github.event.pull_request.title }}
           PATTERN: '^(feat|fix|docs|refactor|test|build|ci|perf|chore|revert)(\([^()]+\))?!?: .+'
         run: |
@@ -232,8 +230,7 @@ jobs:
           persist-credentials: false
       - name: Check that both languages changed together
         env:
-          # Passing these through env instead of embedding them in run guards
-          # against shell injection (a PR body is attacker-controlled text).
+          # A PR body is attacker-controlled text, so it goes through env, not run.
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
@@ -423,8 +420,6 @@ jobs:
       # yq and jq ship with GitHub-hosted runners, so they are not added to mise.
       - name: Check that needs lists every job
         env:
-          # Passing the expression through env instead of embedding it in run
-          # guards against shell injection.
           NEEDS_JSON: ${{ toJSON(needs) }}
         run: |
           set -euo pipefail
@@ -437,8 +432,6 @@ jobs:
           echo "OK: needs lists every job"
       - name: Check upstream job results
         env:
-          # Passing the expression through env instead of embedding it in run
-          # guards against shell injection.
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
           echo "upstream results: ${RESULTS}"

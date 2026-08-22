@@ -104,7 +104,7 @@ In the initial state the only analysis target is `actions` (the workflow files t
         language: [actions, javascript-typescript]
 ```
 
-The languages you can specify are `actions` `cpp` `csharp` `go` `java` `javascript` `python` `ruby` `rust` `swift` and their aliases (`javascript-typescript` → `javascript`, and so on). Languages that need compiling (`java`, `csharp`, `cpp`, and so on) additionally require a `build-mode`.
+Which languages can be specified, and which of them additionally need a `build-mode`, is in [CodeQL's supported languages](https://codeql.github.com/docs/codeql-overview/supported-languages-and-frameworks/).
 
 Things to note:
 
@@ -131,8 +131,6 @@ To run it locally:
 actionlint -color
 ```
 
-Specific findings can be suppressed with `-ignore <regexp>`. A shellcheck finding about the contents of `run:` is silenced by placing a `# shellcheck disable=<code>` comment on the line just above.
-
 ## shellcheck
 
 The `shellcheck` job in [ci.yml](../.github/workflows/ci.yml) checks the `*.sh` / `*.bash` files under git. Unquoted variable expansions, unintended word splitting, comparisons that are always true — the kind of flaw that raises no error and misbehaves silently. It does not look at formatting (indentation and so on); that is the job of shfmt in the [`format`](../README.md#consistent-formatting) job.
@@ -149,11 +147,7 @@ git ls-files -z '*.sh' '*.bash' \
 | `-r` | Do not start shellcheck when there is nothing to check |
 | `--external-sources` | Follow files pulled in with `source` |
 
-Scripts without an extension (files identified only by a shebang) are out of scope. If you add one, add a pattern to `git ls-files`. To suppress an individual finding, place a disable comment on the line just above.
-
-```bash
-# shellcheck disable=SC2086
-```
+Scripts without an extension (files identified only by a shebang) are out of scope. If you add one, add a pattern to `git ls-files`.
 
 The tool is installed with mise ([Installing and verifying the tools](#installing-and-verifying-the-tools)).
 
@@ -172,31 +166,13 @@ The reasons for `git ls-files` / `-z` / `-0` are the same as in [shellcheck](#sh
 
 There is no color option because hadolint has no way to force color (CI logs, not being a tty, come out uncolored).
 
+The rules, the severity threshold (`-t`, `info` and above by default), and how to suppress a finding are in [hadolint's Rules](https://github.com/hadolint/hadolint#rules). There is no `.hadolint.yaml` in the initial state.
+
+The tool is installed with mise ([Installing and verifying the tools](#installing-and-verifying-the-tools)). Locally, run it with `hadolint Dockerfile`.
+
 ### It passes silently while there is no Dockerfile
 
 This template has no Dockerfile yet, so this job succeeds without checking anything (`xargs -r` never starts hadolint and nothing appears in the log). Adding a Dockerfile brings it into scope automatically from that point. Note that "nothing to check" and "checked and found nothing" are hard to tell apart in the log (the same as [osv-scanner](#osv-scanner)).
-
-### What makes it fail
-
-Findings carry a severity of `error` / `warning` / `info` / `style`, and by default the job fails at `info` or above. To change the threshold, add `-t <severity>` (`--failure-threshold`). The list of rules is in [hadolint's Rules](https://github.com/hadolint/hadolint#rules).
-
-### Suppressing findings
-
-To silence one, place a comment just above the instruction in question (both `DL` and `SC` codes can be written).
-
-```dockerfile
-# hadolint ignore=DL3008,SC2086
-RUN apt-get update && apt-get install -y curl
-```
-
-To disable one for a whole file, put `# hadolint global ignore=DL3003,DL3006` at the top. To disable it repository-wide, put a `.hadolint.yaml` at the root (it is read automatically; there is none in the initial state).
-
-```yaml
-ignored:
-  - DL3008
-```
-
-The tool is installed with mise ([Installing and verifying the tools](#installing-and-verifying-the-tools)). Locally, run it with `hadolint Dockerfile`.
 
 ## typos
 
@@ -214,13 +190,6 @@ ignore-hidden = false
 The other is `extend-ignore-re`, which excludes the misspelling example in this section (without it, typos flags this very file).
 
 Suppressions for false positives go in the same file ([all options](https://github.com/crate-ci/typos/blob/master/docs/reference.md)).
-
-| Form | Purpose |
-| --- | --- |
-| `<word> = "<word>"` under `[default.extend-words]` | Always treat that word as correctly spelled |
-| `<identifier> = "<identifier>"` under `[default.extend-identifiers]` | Exclude a compound such as `foo_bar` as a whole |
-| `extend-ignore-re` under `[default]` | Ignore whatever a regular expression matches (a hash value, for example) |
-| `extend-exclude` under `[files]` | Exclude by file or directory (gitignore syntax) |
 
 The tool is installed with mise ([Installing and verifying the tools](#installing-and-verifying-the-tools); typos releases carry neither checksums nor signatures, so mise's verification does not apply). Locally, run it with `typos`, and `typos --write-changes` applies the suggested fixes directly.
 
@@ -365,17 +334,7 @@ The main audits ([all of them](https://docs.zizmor.sh/audits/)):
 
 It covers the repository root (`.`) and automatically collects composite actions and the Dependabot configuration as well. `--strict-collection` is set, so a file it cannot parse becomes a failure rather than a warning it passes over.
 
-There are two ways to suppress a finding. For a single spot, place a `# zizmor: ignore[<audit>]` comment on the line. To disable a set of them, write it in `.github/zizmor.yml`.
-
-```yaml
-rules:
-  template-injection:
-    ignore:
-      - ci.yml:100      # only line 100 of ci.yml
-      - renovate.yml    # the whole file
-```
-
-By default only findings with real impact (the regular persona) are reported. To see stylistic suggestions too, add `--persona=pedantic`.
+Suppressing a finding, and the pedantic persona that adds stylistic suggestions to the findings with real impact reported by default, are covered in [zizmor's documentation](https://docs.zizmor.sh/).
 
 The tool is installed with mise ([Installing and verifying the tools](#installing-and-verifying-the-tools)). Locally, run it with:
 
@@ -388,15 +347,6 @@ zizmor --strict-collection .
 The `gitleaks` job in [ci.yml](../.github/workflows/ci.yml) looks for secrets that crept into the commit history (API keys, access tokens, private keys, and so on). A secret that has been pushed once can be recovered from the history even after a later commit removes it, so **it has to be stopped before it lands**. The first line of defense is secret scanning push protection, which the setup script enables ([Setup](../README.md#setup)): GitHub rejects the push itself. This job is the second line, covering what push protection does not recognize and any history that predates it, and it stops such a commit before the merge. It is in `ci`'s `needs`, so a detection makes the PR unmergeable.
 
 Detection uses the 200-plus rules built into the tool (per-provider regular expressions plus entropy analysis of the value) ([the default configuration](https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml)).
-
-| Example rule | What it detects |
-| --- | --- |
-| `github-pat` / `github-fine-grained-pat` | GitHub Personal Access Tokens |
-| `aws-access-token` | AWS access keys |
-| `private-key` | PEM-format private keys (`-----BEGIN ... PRIVATE KEY-----`) |
-| `anthropic-api-key` / `openai-api-key` | API keys of LLM providers |
-| `slack-bot-token` / `stripe-access-token` | SaaS tokens |
-| `generic-api-key` | Assignments such as `api_key = "..."` whose value has high entropy |
 
 It scans the entire history. `gitleaks git` uses `git log -p` internally, so `fetch-depth: 0` is added to `actions/checkout` to avoid a shallow clone (at the default depth of 1, a value in an older commit would be missed).
 
@@ -411,22 +361,7 @@ It scans the entire history. `gitleaks git` uses `git log -p` internally, so `fe
 
 **Revoke the value first** (reissue the key, revoke the token). Treat it as something others could already have obtained the moment it was pushed; rewriting history can wait. Then remove the value from the repository and change it to be passed through an environment variable or GitHub Secrets.
 
-There are three ways to exclude a false positive (a dummy value used in a test, for example).
-
-- For a single line, place a `# gitleaks:allow` comment on that line.
-- To exclude one specific detection, put a `.gitleaksignore` at the root and write the fingerprint from the `--verbose` output (`<commit>:<file>:<rule ID>:<line>`), one per line.
-
-  ```text
-  418edf165dbb63d6f46993ae8f8818ffd87ea582:cmd/generate/config/rules/jwt.go:jwt:17
-  ```
-
-- To exclude a whole rule, or to add your own, put a `.gitleaks.toml` at the root. Note that **without `useDefault = true` under `[extend]`, all the built-in rules are disabled**.
-
-  ```toml
-  [extend]
-  useDefault = true
-  disabledRules = ["generic-api-key"]
-  ```
+Excluding a false positive (a dummy value used in a test, for example) is done with a `# gitleaks:allow` comment, a `.gitleaksignore`, or a `.gitleaks.toml`, all covered in [gitleaks' documentation](https://github.com/gitleaks/gitleaks).
 
 The tool is installed with mise ([Installing and verifying the tools](#installing-and-verifying-the-tools)). For a local check before committing, `dir` is faster — it looks at the working tree rather than the history.
 
@@ -523,34 +458,13 @@ gh api repos/OWNER/REPO/commits/<sha>/check-runs \
 
 **Bump to the fixed version first.** The report names the version that contains the fix, so upgrading to that version makes the finding disappear (bumping by hand is sometimes faster than waiting for a [Renovate](renovate.md#renovate) update PR).
 
-When you cannot bump right away, or on a false positive, add an `osv-scanner.toml` and exclude it individually.
-
-```toml
-[[IgnoredVulns]]
-id = "GHSA-xxxx-xxxx-xxxx"
-# Deadline. It is detected again after this date (the exception is permanent if omitted)
-ignoreUntil = 2026-09-30
-reason = "A vulnerability in a feature we do not call. To be resolved in the next major update"
-```
-
-**Always write `ignoreUntil`.** Omitting it makes the exception permanent, and nobody notices when a fixed version ships. There is also `[[PackageOverrides]]` for excluding a whole package (with `effectiveUntil` as the deadline).
+When you cannot bump right away, or on a false positive, exclude it individually in an `osv-scanner.toml` ([the configuration format](https://google.github.io/osv-scanner/configuration/)). **Always give the exception a deadline** (`ignoreUntil`, or `effectiveUntil` when excluding a whole package). Without one the exception is permanent, and nobody notices when a fixed version ships.
 
 Only a configuration file in the same directory as the file being scanned takes effect; it does not propagate into subdirectories. In a layout with lockfiles in subdirectories where you want one file at the root to apply to everything, add `--config=osv-scanner.toml` to `scan-args`.
 
 ### It passes silently when there is nothing to scan
 
 What it reads is the lockfiles and manifests committed to the repository ([the list of supported formats](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/)). `-r` is set, so it walks subdirectories too.
-
-| Language / ecosystem | Example files read |
-| --- | --- |
-| JavaScript / TypeScript | `package-lock.json` / `yarn.lock` / `pnpm-lock.yaml` / `bun.lock` |
-| Python | `requirements.txt` / `poetry.lock` / `uv.lock` / `Pipfile.lock` |
-| Go | `go.mod` |
-| Rust | `Cargo.lock` |
-| Ruby | `Gemfile.lock` |
-| Java / Kotlin | `pom.xml` / `gradle.lockfile` |
-| PHP | `composer.lock` |
-| .NET | `packages.lock.json` / `deps.json` |
 
 This template has no readable lockfile at all, so nothing is being checked yet. Checking begins the moment a lockfile is added, with no configuration to add.
 

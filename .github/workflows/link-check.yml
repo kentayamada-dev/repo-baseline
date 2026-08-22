@@ -10,9 +10,8 @@ on:
   push:
     branches: [main]
 
-# Do not start a run until the previous one finishes, and do not cancel the one in
-# flight (hitting the same links from two runs at once gains nothing, and cancelling
-# means that run's result never reaches the issue).
+# Serialized: hitting the same links twice at once gains nothing, and cancelling one
+# loses its results before they reach the issue.
 concurrency:
   group: link-check
   cancel-in-progress: false
@@ -44,11 +43,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -eo pipefail
-          # --mode plain: no colors, because this output goes into the issue body as
-          #   is (the default color mode mixes ANSI escapes into the body).
-          # The default shell is bash -e without pipefail, so it is set explicitly
-          # above (without it tee's exit code is used and a failed check would look
-          # like a success).
+          # --mode plain: this output goes into the issue body as is, and colors would
+          # mix ANSI escapes into it. pipefail is set above because otherwise tee's exit
+          # code hides a failed check.
           lychee \
             --no-progress \
             --mode plain \
@@ -97,8 +94,6 @@ jobs:
           gh issue edit "${url}" --add-label maintenance ||
             echo "::warning::Could not add the maintenance label. Check whether it still exists (./scripts/sync-repo-config.sh can create it)"
 
-      # When the check fails, execution never reaches this step (it is skipped by
-      # default because the previous step failed).
       - name: Close the issue when the links are fixed
         env:
           GH_TOKEN: ${{ github.token }}

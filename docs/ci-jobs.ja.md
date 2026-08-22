@@ -104,7 +104,7 @@ mise 本体のバージョンは [mise-action](https://github.com/jdx/mise-actio
         language: [actions, javascript-typescript]
 ```
 
-指定できる言語は `actions` `cpp` `csharp` `go` `java` `javascript` `python` `ruby` `rust` `swift` と、そのエイリアス（`javascript-typescript` → `javascript` など）です。コンパイルが必要な言語（`java` `csharp` `cpp` など）は追加で `build-mode` の指定が必要です。
+指定できる言語と、追加で `build-mode` が必要な言語は [CodeQL のサポート言語](https://codeql.github.com/docs/codeql-overview/supported-languages-and-frameworks/) にあります。
 
 注意点:
 
@@ -131,8 +131,6 @@ mise 本体のバージョンは [mise-action](https://github.com/jdx/mise-actio
 actionlint -color
 ```
 
-特定の指摘は `-ignore <正規表現>` で抑止できます。`run:` の中身に対する shellcheck の指摘は、対象行の直前に `# shellcheck disable=<コード>` のコメントを置いて黙らせます。
-
 ## shellcheck
 
 [ci.yml](../.github/workflows/ci.yml) の `shellcheck` ジョブが、git 管理下の `*.sh` / `*.bash` を検査します。未クォートの変数展開、意図しない単語分割、常に真になる比較など、実行してもエラーにならず黙って誤動作する類の不備が対象です。整形（インデントなど）は見ません。そちらは [`format`](../README.ja.md#書式の統一) ジョブの shfmt が担当します。
@@ -149,11 +147,7 @@ git ls-files -z '*.sh' '*.bash' \
 | `-r` | 対象が 1 件も無いときに shellcheck を起動しない |
 | `--external-sources` | `source` で読み込む先のファイルも追跡する |
 
-拡張子を持たないスクリプト（shebang だけのファイル）は対象外です。追加したら `git ls-files` のパターンを足してください。指摘を個別に抑止するには、対象行の直前に無効化コメントを置きます。
-
-```bash
-# shellcheck disable=SC2086
-```
+拡張子を持たないスクリプト（shebang だけのファイル）は対象外です。追加したら `git ls-files` のパターンを足してください。
 
 本体は mise で入れています（[ツールの導入と検証](#ツールの導入と検証)）。
 
@@ -172,31 +166,13 @@ git ls-files -z '*Dockerfile' '*Dockerfile.*' '*.dockerfile' \
 
 色の指定が無いのは、hadolint に色を強制するオプションが無いためです（tty でない CI のログには色が付きません）。
 
+ルールの一覧、落ちる基準（`-t`。既定は `info` 以上）、指摘の抑止の書き方は [hadolint の Rules](https://github.com/hadolint/hadolint#rules) にあります。`.hadolint.yaml` は初期状態では置いていません。
+
+本体は mise で入れています（[ツールの導入と検証](#ツールの導入と検証)）。手元では `hadolint Dockerfile` で走らせます。
+
 ### Dockerfile が無い間は黙って通ります
 
 このテンプレートにはまだ Dockerfile が無いため、このジョブは何も検査せずに成功します（`xargs -r` が hadolint を起動せず、ログには何も出ません）。Dockerfile を追加すればその時点から自動で対象になります。「対象が 0 件」と「検査して問題が無かった」がログ上は区別しにくい点に注意してください（[osv-scanner](#osv-scanner) と同じです）。
-
-### 落ちる基準
-
-指摘には `error` / `warning` / `info` / `style` の重大度が付いており、既定では `info` 以上でジョブが落ちます。基準を変えるには `-t <重大度>`（`--failure-threshold`）を足します。ルールの一覧は [hadolint の Rules](https://github.com/hadolint/hadolint#rules) にあります。
-
-### 指摘の抑止
-
-個別に黙らせるには、対象の命令の直前にコメントを置きます（`DL` と `SC` の両方が書けます）。
-
-```dockerfile
-# hadolint ignore=DL3008,SC2086
-RUN apt-get update && apt-get install -y curl
-```
-
-ファイル全体で外すには先頭に `# hadolint global ignore=DL3003,DL3006` を置きます。リポジトリ全体で外すには、ルートに `.hadolint.yaml` を置きます（自動で読まれます。初期状態では置いていません）。
-
-```yaml
-ignored:
-  - DL3008
-```
-
-本体は mise で入れています（[ツールの導入と検証](#ツールの導入と検証)）。手元では `hadolint Dockerfile` で走らせます。
 
 ## typos
 
@@ -214,13 +190,6 @@ ignore-hidden = false
 もう 1 つは `extend-ignore-re` で、この節の綴り間違いの例を除外しています（外すと typos 自身がこのファイルを誤字として弾きます）。
 
 誤検出の抑止も同じファイルに足します（[全項目](https://github.com/crate-ci/typos/blob/master/docs/reference.md)）。
-
-| 書き方 | 用途 |
-| --- | --- |
-| `[default.extend-words]` に `<語> = "<語>"` | その単語を常に正しい綴りとして扱う |
-| `[default.extend-identifiers]` に `<識別子> = "<識別子>"` | `foo_bar` のような複合語を丸ごと除外する |
-| `[default]` の `extend-ignore-re` | 正規表現に当たる箇所（ハッシュ値など）を無視する |
-| `[files]` の `extend-exclude` | ファイル・ディレクトリ単位で除外する（gitignore 形式） |
 
 本体は mise で入れています（[ツールの導入と検証](#ツールの導入と検証)。typos のリリースにはチェックサムも署名も付かないため、mise の検証は掛かりません）。手元では `typos` で走らせ、`typos --write-changes` で修正候補をそのまま適用できます。
 
@@ -365,17 +334,7 @@ excludes:
 
 検査対象はリポジトリのルート（`.`）で、composite action や Dependabot の設定も自動で集めます。`--strict-collection` を付けてあるので、解析できないファイルがあれば警告で流さず失敗します。
 
-指摘の抑止は 2 通りです。1 か所だけなら対象行に `# zizmor: ignore[<監査名>]` のコメントを置きます。まとめて外すには `.github/zizmor.yml` に書きます。
-
-```yaml
-rules:
-  template-injection:
-    ignore:
-      - ci.yml:100      # ci.yml の 100 行目だけ
-      - renovate.yml    # ファイルごと
-```
-
-既定では実害のある指摘（regular persona）だけが報告されます。書き方の改善提案まで見るには `--persona=pedantic` を足します。
+指摘の抑止の書き方と、既定で報告される実害のある指摘に書き方の改善提案を加える pedantic persona は、[zizmor のドキュメント](https://docs.zizmor.sh/)にあります。
 
 本体は mise で入れています（[ツールの導入と検証](#ツールの導入と検証)）。手元では次で走らせます。
 
@@ -388,15 +347,6 @@ zizmor --strict-collection .
 [ci.yml](../.github/workflows/ci.yml) の `gitleaks` ジョブが、コミット履歴に混ざった秘密情報（API キー、アクセストークン、秘密鍵など）を探します。一度 push した秘密情報は、後のコミットで消しても履歴から取り出せるため、**入る前に止めるしかありません**。1 枚目の防御はセットアップスクリプトが有効にする secret scanning の push protection で（[セットアップ](../README.ja.md#セットアップ)）、そもそも push が拒否されます。このジョブは 2 枚目で、push protection が知らないパターンと、それ以前から履歴にあるものを、マージ前に止めます。`ci` の `needs` に入っているので、検出されると PR がマージできません。
 
 検出は本体に組み込まれた 200 以上のルール（プロバイダごとの正規表現と、値のエントロピー判定）で行います（[既定の設定](https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml)）。
-
-| ルール例 | 検出対象 |
-| --- | --- |
-| `github-pat` / `github-fine-grained-pat` | GitHub の Personal Access Token |
-| `aws-access-token` | AWS のアクセスキー |
-| `private-key` | PEM 形式の秘密鍵（`-----BEGIN ... PRIVATE KEY-----`） |
-| `anthropic-api-key` / `openai-api-key` | LLM プロバイダの API キー |
-| `slack-bot-token` / `stripe-access-token` | SaaS のトークン |
-| `generic-api-key` | `api_key = "..."` のような代入のうち、値のエントロピーが高いもの |
 
 走査対象は履歴全体です。`gitleaks git` は内部で `git log -p` を使うため、`actions/checkout` に `fetch-depth: 0` を付けて浅いクローンを避けています（既定の深さ 1 では過去のコミットに入った値を見落とします）。
 
@@ -411,22 +361,7 @@ zizmor --strict-collection .
 
 まず**その値を失効させます**（キーの再発行、トークンの revoke）。push した時点で他者が取得できたものとして扱い、履歴の書き換えは後回しで構いません。そのうえでリポジトリから値を消し、環境変数や GitHub Secrets 経由で渡す形に直してください。
 
-誤検知（テスト用のダミー値など）を外す方法は 3 通りあります。
-
-- 1 行だけなら、その行に `# gitleaks:allow` コメントを置く。
-- 特定の検出だけ外すなら、ルートに `.gitleaksignore` を置き、`--verbose` の出力にある fingerprint（`<コミット>:<ファイル>:<ルール ID>:<行>`）を 1 行 1 件で書く。
-
-  ```text
-  418edf165dbb63d6f46993ae8f8818ffd87ea582:cmd/generate/config/rules/jwt.go:jwt:17
-  ```
-
-- ルール単位で外す、または独自ルールを足すなら `.gitleaks.toml` を置く。**`[extend]` の `useDefault = true` を書かないと組み込みのルールが全て無効になる**ので注意してください。
-
-  ```toml
-  [extend]
-  useDefault = true
-  disabledRules = ["generic-api-key"]
-  ```
+誤検知（テスト用のダミー値など）を外すには `# gitleaks:allow` コメント、`.gitleaksignore`、`.gitleaks.toml` の 3 通りがあり、いずれも [gitleaks のドキュメント](https://github.com/gitleaks/gitleaks)にあります。
 
 本体は mise で入れています（[ツールの導入と検証](#ツールの導入と検証)）。手元でコミット前に確認する場合は、履歴ではなく作業ツリーを見る `dir` が速いです。
 
@@ -523,34 +458,13 @@ gh api repos/OWNER/REPO/commits/<sha>/check-runs \
 
 **まず修正版のバージョンへ上げます。** 報告には修正が入ったバージョンが出るので、そこまで上げれば消えます（[Renovate](renovate.ja.md#renovate) の更新 PR を待つより手で上げる方が速いことがあります）。
 
-すぐに上げられない場合や誤検知の場合は、`osv-scanner.toml` を置いて個別に外します。
-
-```toml
-[[IgnoredVulns]]
-id = "GHSA-xxxx-xxxx-xxxx"
-# 期限。この日を過ぎると再び検出される (省略すると無期限)
-ignoreUntil = 2026-09-30
-reason = "呼び出していない機能の脆弱性。次のメジャー更新で解消予定"
-```
-
-**`ignoreUntil` は必ず書いてください。** 省略すると無期限の例外になり、修正版が出ても誰も気付きません。パッケージ単位で外す `[[PackageOverrides]]`（`effectiveUntil` で期限を切る）もあります。
+すぐに上げられない場合や誤検知の場合は、`osv-scanner.toml` を置いて個別に外します（[設定の書式](https://google.github.io/osv-scanner/configuration/)）。**例外には必ず期限を切ってください**（`ignoreUntil`。パッケージ単位で外すなら `effectiveUntil`）。省略すると無期限の例外になり、修正版が出ても誰も気付きません。
 
 設定ファイルは検査対象ファイルと同じディレクトリに置いたものだけが効き、サブディレクトリには伝播しません。サブディレクトリへ lockfile を置く構成でルートの 1 つを全体に効かせたい場合は、`scan-args` に `--config=osv-scanner.toml` を足してください。
 
 ### 検査対象が無いときは黙って通ります
 
 見るのはリポジトリにコミットされた lockfile / マニフェストです（[対応形式の一覧](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/)）。`-r` を付けてあるのでサブディレクトリも辿ります。
-
-| 言語 / エコシステム | 読むファイルの例 |
-| --- | --- |
-| JavaScript / TypeScript | `package-lock.json` / `yarn.lock` / `pnpm-lock.yaml` / `bun.lock` |
-| Python | `requirements.txt` / `poetry.lock` / `uv.lock` / `Pipfile.lock` |
-| Go | `go.mod` |
-| Rust | `Cargo.lock` |
-| Ruby | `Gemfile.lock` |
-| Java / Kotlin | `pom.xml` / `gradle.lockfile` |
-| PHP | `composer.lock` |
-| .NET | `packages.lock.json` / `deps.json` |
 
 このテンプレートには読める lockfile が 1 件も無いため、現時点ではまだ何も検査していません。lockfile を置いた時点で、設定を足さずに検査が始まります。
 

@@ -7,9 +7,7 @@ on:
   push:
     branches: [main]
 
-# Do not start a run until the previous one finishes, and do not cancel the one in
-# flight (both are read-only so they would not conflict, but running them at the same
-# time gains nothing).
+# Serialized: running two read-only checks at once gains nothing.
 concurrency:
   group: repo-settings
   cancel-in-progress: false
@@ -34,9 +32,8 @@ jobs:
           GH_TOKEN: ${{ secrets.SETTINGS_TOKEN || github.token }}
         run: |
           set -eo pipefail
-          # The output also goes into the issue body. The default shell is bash -e
-          # without pipefail, so it is set explicitly above (without it tee's exit code
-          # is used and a failed check would look like a success).
+          # The output goes into the issue body too. pipefail is set above because
+          # otherwise tee's exit code hides a failed check.
           ./scripts/sync-repo-config.sh --check 2>&1 | tee "${RUNNER_TEMP}/check.log"
 
       # steps.check.outcome is part of the condition so that a failure in another
@@ -90,8 +87,6 @@ jobs:
           gh issue edit "${url}" --add-label maintenance ||
             echo "::warning::Could not add the maintenance label. Check whether it still exists (./scripts/sync-repo-config.sh can create it)"
 
-      # When the check fails, execution never reaches this step (it is skipped by
-      # default because the previous step failed).
       - name: Close the issue when the drift is gone
         env:
           GH_TOKEN: ${{ github.token }}

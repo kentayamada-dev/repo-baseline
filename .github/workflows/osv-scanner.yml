@@ -7,10 +7,8 @@ on:
   push:
     branches: [main]
 
-# Do not start a run until the previous one finishes: if two runs upload results
-# for the same repository at once, which one ends up as the final state is
-# undefined. Do not cancel the run in flight (cancelling means that run's result
-# never reaches Code scanning).
+# Serialized: concurrent uploads leave an undefined final state, and cancelling one
+# loses its results before they reach Code scanning.
 concurrency:
   group: osv-scanner
   cancel-in-progress: false

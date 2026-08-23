@@ -74,7 +74,7 @@ Prerequisites: [gh](https://cli.github.com/) and [jq](https://jqlang.github.io/j
 ./scripts/sync-repo-config.sh
 ```
 
-That enables everything below. Add `--dry-run` if you only want to see what would be sent.
+That enables everything below. Add `--dry-run` if you only want to see what would be sent; the other options and environment variables are in `--help`.
 
 - Branch protection on main ([What branch protection enforces](#what-branch-protection-enforces))
 - Auto-merge and automatic branch deletion after merging
@@ -96,27 +96,6 @@ When applying this to an existing repository, a leftover classic branch protecti
 
 ```bash
 gh api --method DELETE repos/OWNER/REPO/branches/main/protection
-```
-
-### Runtime options
-
-Running it without arguments applies everything listed above, so you normally do not need these.
-
-| Option | Description |
-| --- | --- |
-| `--dry-run` | Only print what would be sent; change nothing in the repository |
-| `--check` | Only check whether the current settings match the definitions. Lists the differences and exits 1 on drift ([Settings drift check](docs/drift-check.md#settings-drift-check)) |
-| `-h` / `--help` | Print the usage (it prints the comment at the top of the [script](scripts/sync-repo-config.sh) as is) |
-| `REPO=<owner>/<repo>` | Specify the target repository. The default is derived from the `origin` remote |
-| `RULESET_FILE=<path>` | Apply only one ruleset. The default is to apply all of `.github/rulesets/*.json` |
-| `REPO_SETTINGS=false` | Apply only the ruleset, skipping the repository setting changes and the issue template rewrite |
-
-The last three are environment variables, not arguments.
-
-```bash
-./scripts/sync-repo-config.sh --help
-REPO_SETTINGS=false ./scripts/sync-repo-config.sh
-RULESET_FILE=.github/rulesets/main.json ./scripts/sync-repo-config.sh --dry-run
 ```
 
 ### What branch protection enforces
@@ -148,21 +127,7 @@ The documentation describing the template, the Claude Code settings and the comm
 ./scripts/cleanup-template.sh
 ```
 
-| Option | Description |
-| --- | --- |
-| `--dry-run` | Only print the list; delete nothing |
-| `-y` / `--yes` | Delete without asking |
-| `-h` / `--help` | Print the usage (the comment at the top of the [script](scripts/cleanup-template.sh)) |
-
-What stays is the part a derived repository keeps using: the workflows, the ruleset, [sync-repo-config.sh](scripts/sync-repo-config.sh), the issue and PR templates, and the tool configuration.
-
-**A stub README.md holding the repository name is written in place of the deleted one**, because a repository with no README at all is worse than one with a placeholder. That is the only thing written; CLAUDE.md and the rest are simply gone.
-
-**LICENSE is not deleted.** The files that stay are the licensed work, and MIT asks for the notice to travel with them, so put your own name in the copyright line or replace the file with the license you want ([LICENSE](LICENSE) permits both).
-
-Only tracked files are deleted, so anything git does not track (`.claude/settings.local.json`, for example) is left alone. The workflows and `sync-repo-config.sh` mention the deleted documentation in comments and in the messages they print; those mentions are listed at the end of the run to be rewritten by hand. No check fails on them, because they are not links.
-
-The changes are left unstaged, and main is protected by then, so land them through a PR like any other change ([Development flow](#development-flow)).
+The options and the details (what stays, the README stub, why LICENSE is kept) are in `--help`, and the run ends by printing the next steps, including how to land the deletions through a PR.
 
 ## Development flow
 
@@ -177,8 +142,6 @@ gh pr merge --auto
 ```
 
 Zero approvals are required, so you can merge your own PR, but nothing merges until CI passes. Adding `gh pr merge --auto` merges automatically as soon as CI passes (since squash is the only enabled merge method, `--squash` is usually unnecessary).
-
-`gh pr create` opens your editor preloaded with the [PR template](.github/pull_request_template.md). Adding `--fill` fills the body from the commit messages and does not use the template. To write it in the browser, use `--web`, which opens the page with the template already in place.
 
 A PR whose base has moved ahead cannot be merged until it is brought up to date. Click "Update branch" on the PR page, or run `git merge origin/main` and push. CI runs again, and once it passes the PR can be merged.
 
@@ -228,16 +191,7 @@ Indentation, line endings, and trailing whitespace are kept consistent by three 
 
 The `format` job checks every item in `.editorconfig` using [editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker). `.editorconfig` is the single source of truth; the check items are not copied into CI.
 
-| Item checked | Description |
-| --- | --- |
-| `insert_final_newline` | Whether the file ends with a newline |
-| `end_of_line` | Whether CRLF has crept in |
-| `indent_style` | Whether tabs are used for indentation |
-| `indent_size` | Whether the indent width is a multiple of 2 (except `*.sh`) |
-| `trim_trailing_whitespace` | Whether lines end with whitespace (except `*.md`) |
-| `charset` | Whether it is UTF-8 |
-
-The tab check also prevents concrete breakage. YAML cannot use tabs for indentation by specification, so editing `ci.yml` in an environment whose editor defaults to tabs breaks the workflow.
+The tab check (`indent_style`) also prevents concrete breakage. YAML cannot use tabs for indentation by specification, so editing `ci.yml` in an environment whose editor defaults to tabs breaks the workflow.
 
 The same job has [shfmt](https://github.com/mvdan/sh) check the formatting of shell scripts.
 
@@ -275,12 +229,6 @@ There are two in [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE). Both are YAM
 | [Task](.github/ISSUE_TEMPLATE/task.yml) | A feature to add or work that needs doing | `enhancement` |
 
 **Anything that fits neither goes to Discussions.** The issue creation page shows an "Ask in Discussions" link. Once the discussion settles, "Create issue from discussion" on the Discussion page converts it into an issue.
-
-| What to use | When |
-| --- | --- |
-| Bug report issue | There is a clearly identified defect to fix |
-| Task issue | What to do is already decided |
-| Discussions | Questions, direction discussions, or anything you cannot classify as a bug or a request |
 
 Blank issues are forbidden by `blank_issues_enabled: false` in [config.yml](.github/ISSUE_TEMPLATE/config.yml), so every issue goes through one of the templates. That setting only removes the blank option from the issue creation page, though; the API route (including passing a title and body to `gh issue create`) goes straight through.
 
@@ -321,11 +269,7 @@ The [settings drift check](docs/drift-check.md#settings-drift-check) verifies da
 
 ## Releases
 
-Because immutable releases are enabled, a release published after enabling them cannot be changed afterwards.
-
-- Replacing, adding, or deleting release assets is not possible
-- Re-pointing or deleting that release's tag is not possible either
-- When a fix is needed, publish it as a new version instead
+Because immutable releases are enabled, a release published after enabling them cannot be changed afterwards: its assets and its tag are locked, and a fix means publishing a new version ([GitHub's documentation](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases) has the details).
 
 The guarantee that the contents behind a given tag never change is a supply-chain safeguard. To disable it, run `gh api --method DELETE repos/OWNER/REPO/immutable-releases`.
 

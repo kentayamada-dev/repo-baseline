@@ -1,0 +1,31 @@
+name: osv-scanner
+
+on:
+  schedule:
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+# Serialized: concurrent uploads leave an undefined final state, and cancelling one
+# loses its results before they reach Code scanning.
+concurrency:
+  group: osv-scanner
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  osv-scanner:
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@6e4298ebc4db23e847df9b2e2de2939d6f066c67 # v2.5.1
+    with:
+      scan-args: |-
+        -r
+        --allow-no-lockfiles
+        ./
+      fail-on-vuln: false

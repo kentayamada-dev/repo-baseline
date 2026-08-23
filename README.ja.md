@@ -74,7 +74,7 @@
 ./scripts/sync-repo-config.sh
 ```
 
-これで以下が有効になります。送信内容だけ確認したい場合は `--dry-run` を付けてください。
+これで以下が有効になります。送信内容だけ確認したい場合は `--dry-run` を付けてください。他のオプションと環境変数は `--help` にあります。
 
 - main のブランチ保護（[ブランチ保護の内容](#ブランチ保護の内容)）
 - auto-merge とマージ後のブランチ自動削除
@@ -96,27 +96,6 @@
 
 ```bash
 gh api --method DELETE repos/OWNER/REPO/branches/main/protection
-```
-
-### 実行時のオプション
-
-引数なしで実行すれば上に挙げたものがすべて適用されるので、通常これらは不要です。
-
-| 指定 | 内容 |
-| --- | --- |
-| `--dry-run` | 送信内容を表示するだけで、リポジトリには何も変更を加えない |
-| `--check` | 現在の設定が定義どおりかを確認するだけ。ずれていれば差分を並べて終了コード 1（[設定のずれの検査](docs/drift-check.ja.md#設定のずれの検査)） |
-| `-h` / `--help` | 使い方を表示する（[スクリプト](scripts/sync-repo-config.sh)冒頭のコメントをそのまま出します） |
-| `REPO=<owner>/<repo>` | 対象リポジトリを指定する。既定は `origin` リモートから判定 |
-| `RULESET_FILE=<パス>` | 適用する ruleset を 1 つに絞る。既定は `.github/rulesets/*.json` をすべて適用 |
-| `REPO_SETTINGS=false` | ruleset の適用だけ行い、リポジトリ設定の変更と issue テンプレートの書き換えを飛ばす |
-
-後ろの 3 つは引数ではなく環境変数です。
-
-```bash
-./scripts/sync-repo-config.sh --help
-REPO_SETTINGS=false ./scripts/sync-repo-config.sh
-RULESET_FILE=.github/rulesets/main.json ./scripts/sync-repo-config.sh --dry-run
 ```
 
 ### ブランチ保護の内容
@@ -148,21 +127,7 @@ ruleset は [main.json](.github/rulesets/main.json) の 1 つで、対象は `ma
 ./scripts/cleanup-template.sh
 ```
 
-| オプション | 内容 |
-| --- | --- |
-| `--dry-run` | 一覧を表示するだけで、何も削除しない |
-| `-y` / `--yes` | 確認を取らずに削除する |
-| `-h` / `--help` | 使い方を表示する（[スクリプト](scripts/cleanup-template.sh)冒頭のコメント） |
-
-残るのは派生リポジトリが使い続ける部分、つまりワークフロー、ruleset、[sync-repo-config.sh](scripts/sync-repo-config.sh)、issue と PR のテンプレート、各ツールの設定です。
-
-**削除した README の代わりに、リポジトリ名だけを書いた README.md の雛形を作ります。** README が 1 つもない状態は、プレースホルダが置かれている状態より悪いためです。作るのはこれだけで、CLAUDE.md などは単に消えます。
-
-**LICENSE は削除しません。** 残るファイルこそがライセンスの対象物であり、MIT は表示をそれに伴わせることを求めています。著作権行を自分の名前に書き換えるか、使いたいライセンスのファイルに差し替えてください（[LICENSE](LICENSE) はどちらも許しています）。
-
-削除対象は git が追跡しているファイルだけなので、追跡外のもの（たとえば `.claude/settings.local.json`）はそのまま残ります。ワークフローと `sync-repo-config.sh` はコメントや出力メッセージの中で削除されたドキュメントに言及しており、その箇所は実行の最後に一覧表示されるので手で書き換えてください。リンクではないため、どのチェックも落ちません。
-
-変更は未ステージのまま残ります。この時点で main は保護されているので、他の変更と同じように PR で取り込んでください（[開発フロー](#開発フロー)）。
+オプションと詳細（何が残るか、README の雛形、LICENSE を残す理由）は `--help` にあり、実行の最後には削除を PR で取り込む手順を含む「次にやること」が表示されます。
 
 ## 開発フロー
 
@@ -177,8 +142,6 @@ gh pr merge --auto
 ```
 
 承認は 0 人でよいのでセルフマージできますが、CI が通らない限りマージはされません。`gh pr merge --auto` を付けておくと、CI が通った時点で自動的にマージされます（マージ方式は squash のみ有効なので、通常 `--squash` は不要です）。
-
-`gh pr create` は [PR テンプレート](.github/pull_request_template.md)をエディタに読み込んで開きます。`--fill` を付けるとコミットメッセージで本文が埋まり、テンプレートは使われません。ブラウザで書くなら `--web` を使うと、テンプレート入りの状態で開きます。
 
 main が進んだ PR は、最新化するまでマージできません。PR 画面の「Update branch」を押すか、`git merge origin/main` して push してください。CI が再実行され、通ればマージできます。
 
@@ -228,16 +191,7 @@ gh api repos/OWNER/REPO --jq .squash_merge_commit_title   # PR_TITLE である�
 
 `format` ジョブは [editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker) で `.editorconfig` の全項目を検査します。設定の情報源は `.editorconfig` 1 つだけで、CI 側に検査項目を書き写してはいません。
 
-| 検査される項目 | 内容 |
-| --- | --- |
-| `insert_final_newline` | 末尾に改行があるか |
-| `end_of_line` | CRLF が混ざっていないか |
-| `indent_style` | インデントにタブが無いか |
-| `indent_size` | インデント幅が 2 の倍数か（`*.sh` を除く） |
-| `trim_trailing_whitespace` | 行末に空白が無いか（`*.md` を除く） |
-| `charset` | UTF-8 か |
-
-タブの検査には実害の防止という意味もあります。YAML は仕様上インデントにタブを使えないため、エディタの既定がタブの環境で `ci.yml` を編集するとワークフローが壊れます。
+タブの検査（`indent_style`）には実害の防止という意味もあります。YAML は仕様上インデントにタブを使えないため、エディタの既定がタブの環境で `ci.yml` を編集するとワークフローが壊れます。
 
 同じジョブで [shfmt](https://github.com/mvdan/sh) がシェルスクリプトの整形を検査します。
 
@@ -275,12 +229,6 @@ editorconfig-checker と shfmt は、他の検査ツールと同じく本体を 
 | [Task](.github/ISSUE_TEMPLATE/task.yml)（作業項目） | 追加したい機能、やるべき作業 | `enhancement` |
 
 **どちらにも当てはまらないものは Discussions へ。** issue 作成画面に「Ask in Discussions」というリンクを出してあります。話が固まったら、Discussion ページの「Create issue from discussion」で issue に変換できます。
-
-| 使うもの | 内容 |
-| --- | --- |
-| Bug report issue | 直すべき不具合がはっきりしている |
-| Task issue | やることが決まっている |
-| Discussions | バグか要望か判断できない、質問、方針の相談 |
 
 白紙の issue は [config.yml](.github/ISSUE_TEMPLATE/config.yml) の `blank_issues_enabled: false` で禁止してあり、必ずどちらかのテンプレートを通ります。ただしこれは issue 作成画面から白紙の選択肢を消すだけの設定で、API 経由（`gh issue create` にタイトルと本文を渡した場合も含む）は素通りします。
 
@@ -321,11 +269,7 @@ git ls-files -z '.github/ISSUE_TEMPLATE/config.yml' '.github/ISSUE_TEMPLATE/conf
 
 ## リリース
 
-immutable releases を有効にしているため、有効化後に公開したリリースは後から変更できません。
-
-- リリースアセットの差し替え・追加・削除は不可
-- そのリリースのタグの付け替え・削除も不可
-- 修正が必要な場合は新しいバージョンとしてリリースし直す
+immutable releases を有効にしているため、有効化後に公開したリリースは後から変更できません。アセットもタグも固定され、修正は新しいバージョンとして出し直します（詳細は [GitHub のドキュメント](https://docs.github.com/ja/repositories/releasing-projects-on-github/about-releases)）。
 
 「同じタグの中身が入れ替わらない」ことが保証されるため、サプライチェーン対策になります。無効化するには `gh api --method DELETE repos/OWNER/REPO/immutable-releases` を実行します。
 

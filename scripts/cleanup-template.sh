@@ -2,7 +2,7 @@
 #
 # Deletes the files that belong to this template itself, leaving only what a
 # repository created from it keeps using: the workflows, the ruleset, the setup
-# script and the tool configuration.
+# script, the issue and PR templates, and the tool configuration.
 #
 # A repository with no README at all is worse than one with a placeholder, so a
 # stub holding the repository name is written in place of the deleted README. That
@@ -13,8 +13,8 @@
 # to travel with them, so replace the copyright line or the whole file instead.
 #
 # Mentions of the deleted paths that survive in the files that stay are listed
-# after the run, to be rewritten by hand. Only mentions that spell the path out are
-# found; prose such as "see the README" is not.
+# before anything is deleted, to be rewritten by hand. Only mentions that spell the
+# path out are found; prose such as "see the README" is not.
 #
 # Only tracked files are deleted, so local files git does not track (for example
 # .claude/settings.local.json) are left where they are.

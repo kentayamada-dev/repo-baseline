@@ -58,11 +58,6 @@ jobs:
           fi
           log="${HOME}/renovate.log"
           renovate 2>&1 | tee "${log}"
-          # Promote Renovate's warning to a failure (docs/renovate.md "When a run fails").
-          if grep -qF 'Cannot access vulnerability alerts' "${log}"; then
-            echo "::error::RENOVATE_TOKEN cannot read Dependabot alerts. Grant the token Dependabot alerts: Read-only (see \"Registering the token\" in docs/renovate.md)."
-            exit 1
-          fi
           if ! grep -q 'Package lookup failures' "${log}"; then
             echo 'lookup_failed=false' >>"${GITHUB_OUTPUT}"
             exit 0

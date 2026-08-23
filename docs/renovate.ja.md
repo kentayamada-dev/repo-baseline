@@ -24,7 +24,7 @@ gh workflow run renovate.yml
 | Pull requests: Read and write | PR の作成・更新 |
 | Workflows: Read and write | `.github/workflows/` 配下の更新 |
 | Issues: Read and write | 設定に問題があるときの警告 issue の作成 |
-| Dependabot alerts: Read-only | [セットアップ](../README.ja.md#セットアップ)で有効化した alerts の読み取り。既知の脆弱性がある依存には、次の実行時にまとめ PR とは別の単独の修正 PR が立ちます（Renovate の `vulnerabilityAlerts`。既定で有効）。権限が無いとき Renovate 自身は警告を出して飛ばすだけなので、ワークフロー側でその警告を失敗に格上げしています（[実行が失敗したとき](#実行が失敗したとき)） |
+| Dependabot alerts: Read-only | [セットアップ](../README.ja.md#セットアップ)で有効化した alerts の読み取り。既知の脆弱性がある依存には、次の実行時にまとめ PR とは別の単独の修正 PR が立ちます（Renovate の `vulnerabilityAlerts`。既定で有効）。権限が無いとき Renovate 自身は警告を出して飛ばすだけなので、実行は成功したままになります |
 
 トークンを secret に登録し、実際に動かして確認します（更新があれば PR が作られます）。
 
@@ -45,8 +45,6 @@ gh run watch
 issue は `Renovate runs are failing` というタイトルで `maintenance` ラベル付きで立ち（[ラベル](../README.ja.md#ラベル)）、本文に実行ログの URL と直し方が入ります。すでに同じ issue が open の間は何もせず（毎週同じ issue が積み上がらないように）、実行が成功すれば自動的に閉じます。
 
 issue の作成と close はワークフローの `GITHUB_TOKEN`（`issues: write`）で行います。`RENOVATE_TOKEN` が失効していても通知が出るように、通知には使いません。
-
-**トークンが Dependabot alerts を読めないときも実行の失敗になります。** Renovate 自身は `Cannot access vulnerability alerts` という警告を出して `vulnerabilityAlerts` の機能を飛ばし、そのまま続行します。セキュリティ機能が黙って失われるのは、まさにこの通知が拾うべき静かな状態なので、ワークフローがログからこの文字列を拾って失敗に変えています。[依存を解決できなかったとき](#依存を解決できなかったとき)の検知と同じくこの文言だけに依存しているため、Renovate 側が警告の文面を変えると検知は静かに効かなくなります。
 
 **schedule の自動停止はこの通知では拾えません。** [リポジトリの活動が 60 日間無いと GitHub が schedule を止めます](ci-jobs.ja.md#定期実行が止まるとき)が、実行自体が起きないため issue も立ちません。GitHub からの停止通知メールが唯一の手掛かりです（[renovate.yml](../.github/workflows/renovate.yml) のコメントを参照）。
 

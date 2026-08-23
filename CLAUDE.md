@@ -16,7 +16,7 @@ A template repository providing groundwork for repository operations: branch pro
 
 ## Repository etiquette
 
-- main cannot be pushed to; every change lands through a PR, squash merge only (`gh pr merge --auto` merges once CI passes)
+- main cannot be pushed to; every change lands through a PR, squash merge only (`gh pr merge --auto --squash` merges once CI passes; non-interactive runs need the explicit `--squash`)
 - Before committing, fetch and integrate the latest remote main, then create a working branch from it
 - Claude edits files only; do not commit, push, or create a PR unless explicitly asked
 - Write commit messages and PR titles/bodies in English (squash keeps both on main: the title as the commit title, the messages concatenated into its body)

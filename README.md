@@ -138,10 +138,10 @@ git switch -c feat/xxx
 # make changes and commit
 git push -u origin HEAD
 gh pr create
-gh pr merge --auto
+gh pr merge --auto --squash
 ```
 
-Zero approvals are required, so you can merge your own PR, but nothing merges until CI passes. Adding `gh pr merge --auto` merges automatically as soon as CI passes (since squash is the only enabled merge method, `--squash` is usually unnecessary).
+Zero approvals are required, so you can merge your own PR, but nothing merges until CI passes. Adding `gh pr merge --auto --squash` merges automatically as soon as CI passes (squash is the only enabled merge method, and non-interactive runs error out without an explicit method).
 
 A PR whose base has moved ahead cannot be merged until it is brought up to date. Click "Update branch" on the PR page, or run `git merge origin/main` and push. CI runs again, and once it passes the PR can be merged.
 

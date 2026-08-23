@@ -138,10 +138,10 @@ git switch -c feat/xxx
 # 変更してコミット
 git push -u origin HEAD
 gh pr create
-gh pr merge --auto
+gh pr merge --auto --squash
 ```
 
-承認は 0 人でよいのでセルフマージできますが、CI が通らない限りマージはされません。`gh pr merge --auto` を付けておくと、CI が通った時点で自動的にマージされます（マージ方式は squash のみ有効なので、通常 `--squash` は不要です）。
+承認は 0 人でよいのでセルフマージできますが、CI が通らない限りマージはされません。`gh pr merge --auto --squash` を付けておくと、CI が通った時点で自動的にマージされます（マージ方式は squash のみ有効ですが、非対話の実行では方式を明示しないとエラーになります）。
 
 main が進んだ PR は、最新化するまでマージできません。PR 画面の「Update branch」を押すか、`git merge origin/main` して push してください。CI が再実行され、通ればマージできます。
 

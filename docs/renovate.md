@@ -26,7 +26,7 @@ gh workflow run renovate.yml
 | Pull requests: Read and write | Creating and updating PRs |
 | Workflows: Read and write | Updating files under `.github/workflows/` |
 | Issues: Read and write | Opening a warning issue when the configuration has a problem |
-| Dependabot alerts: Read-only | Reading the alerts that [Setup](../README.md#setup) enables. At the next run, a dependency with a known vulnerability gets a fix PR of its own, separate from the grouped update (Renovate's `vulnerabilityAlerts`, on by default). Renovate itself only warns and skips this when the permission is missing, so the workflow turns that warning into a failed run ([When a run fails](#when-a-run-fails)) |
+| Dependabot alerts: Read-only | Reading the alerts that [Setup](../README.md#setup) enables. At the next run, a dependency with a known vulnerability gets a fix PR of its own, separate from the grouped update (Renovate's `vulnerabilityAlerts`, on by default). When the permission is missing, Renovate only warns and skips this, so the run still succeeds |
 
 Register the token as a secret and run once to confirm (a PR is created if there is an update).
 
@@ -47,8 +47,6 @@ You cannot tell whether the permissions are right until it runs. If any are miss
 The issue is titled `Renovate runs are failing` and gets the `maintenance` label ([Labels](../README.md#labels)); the body holds the run log URL and how to fix it. While the same issue is already open nothing more is created (so it does not pile up weekly), and once a run succeeds it closes automatically.
 
 Creating and closing the issue uses the workflow's `GITHUB_TOKEN` (`issues: write`). `RENOVATE_TOKEN` is deliberately not used, so the notification still works when it has expired.
-
-**A token that cannot read Dependabot alerts also fails the run.** Renovate itself only logs `Cannot access vulnerability alerts` as a warning, skips its `vulnerabilityAlerts` feature, and carries on — a security feature silently lost is exactly the quiet state this notification exists for, so the workflow greps the log for that string and turns it into a failure. Like the detection in [When a dependency cannot be resolved](#when-a-dependency-cannot-be-resolved), it depends on that wording alone: if Renovate rephrases the warning, the check silently stops firing.
 
 **The automatic disabling of the schedule cannot be caught by this notification.** GitHub [disables the schedule after 60 days without repository activity](ci-jobs.md#when-the-scheduled-run-stops), and since no run happens, no issue is opened either. GitHub's deactivation email is the only clue (see the comment in [renovate.yml](../.github/workflows/renovate.yml)).
 

@@ -7,11 +7,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -c 'if ((.tool_input.command // \"\") | test(\"\\\\bgit\\\\b[^|;&]*\\\\b(commit|push)\\\\b|\\\\bgh\\\\b[^|;&]*\\\\bpr\\\\b[^|;&]*\\\\bcreate\\\\b\")) then {hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"ask\",permissionDecisionReason:\"CLAUDE.md: commit/push/PR creation requires an explicit user request — confirm before running.\"}} else empty end'"
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ask-before-commit-push-pr.sh"
           },
           {
             "type": "command",
-            "command": "jq -e '(.tool_input.command // \"\") | test(\"\\\\bgit\\\\b[^|;&]*\\\\bcommit\\\\b\")' >/dev/null && [ \"$(git branch --show-current 2>/dev/null)\" = \"main\" ] && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"CLAUDE.md: never commit on main — create a working branch from the latest remote main first.\"}}' || true"
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-commit-on-main.sh"
           }
         ]
       }
@@ -22,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -c 'if ((.tool_input.file_path // \"\") | test(\"README(\\\\.ja)?\\\\.md$|/docs/[^/]+\\\\.md$\")) then {hookSpecificOutput:{hookEventName:\"PostToolUse\",additionalContext:\"Bilingual-pair rule (CONTRIBUTING.md): this file has an English/Japanese counterpart (X.md / X.ja.md). Update the counterpart in the same PR (English first).\"}} else empty end'"
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/remind-bilingual-pair.sh"
           }
         ]
       }

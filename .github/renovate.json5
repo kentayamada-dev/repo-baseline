@@ -46,7 +46,7 @@
     commitMessageTopic: 'replace {{{depName}}} with {{{newName}}}',
   },
   prBodyTemplate: '{{{header}}}{{{footer}}}',
-  prHeader: 'New versions of dependencies are available. If [`ci`](https://github.com/{{{repository}}}/actions/workflows/ci.yml) passes, review the changes and merge.\n\
+  prHeader: 'New versions of dependencies are available. If `ci` passes, review the changes and merge.\n\
 \n\
 | Package | Update | Change |\n\
 | --- | --- | --- |\

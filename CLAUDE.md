@@ -20,7 +20,6 @@ A template repository providing groundwork for repository operations: branch pro
 - Before committing, fetch and integrate the latest remote main, then create a working branch from it
 - Claude edits files only; do not commit, push, or create a PR unless explicitly asked
 - Write commit messages and PR titles/bodies in English (squash keeps both on main: the title as the commit title, the messages concatenated into its body)
-- Adding a CI job means adding it to the `ci` gate job's `needs` in ci.yml (CI itself verifies the list is complete)
 
 ## References
 

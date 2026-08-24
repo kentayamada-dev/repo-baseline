@@ -38,7 +38,8 @@ The rest is reference material to look up when you need it.
 | [.github/pull_request_template.md](.github/pull_request_template.md) | The PR body template |
 | [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE) | Issue templates (bug report / task) |
 | [CLAUDE.md](CLAUDE.md) | Instructions Claude Code reads. Replace it with the instructions for your own repository |
-| [.claude/settings.json](.claude/settings.json) | Claude Code settings and hooks that enforce the rules in CLAUDE.md |
+| [.claude/settings.json](.claude/settings.json) | Claude Code settings, wiring up the hook scripts below |
+| [.claude/hooks/](.claude/hooks) | The hook scripts that enforce the rules in CLAUDE.md |
 | [.claude/skills/docs-check/SKILL.md](.claude/skills/docs-check/SKILL.md) | The duplication and stale-docs check to run (run as `/docs-check`) |
 | [mise.toml](mise.toml) | Versions of the check tools used in CI |
 | [.markdownlint-cli2.jsonc](.markdownlint-cli2.jsonc) | Configuration for markdownlint-cli2, the Markdown format checker |
@@ -234,7 +235,7 @@ Blank issues are forbidden by `blank_issues_enabled: false` in [config.yml](.git
 
 **Do not write security problems in issues.** Private vulnerability reporting is enabled, so you can report privately from the Security tab ([SECURITY.md](SECURITY.md)).
 
-Since `contact_links` in `config.yml` only accepts absolute URLs, the template holds `https://github.com/OWNER/REPO/discussions/new/choose`, and the script in [Setup](#setup) rewrites it to the actual repository name. **The rewritten `config.yml` needs to be committed** (because GitHub reads the file on main). Fixing it by hand is fine too; in that case the script does nothing.
+Since `contact_links` in `config.yml` only accepts absolute URLs, the template holds `https://github.com/OWNER/REPO/discussions/new/choose`, and the script in [Setup](#setup) rewrites it to the actual repository name. **The rewritten `config.yml` needs to be committed.** Fixing it by hand is fine too; in that case the script does nothing.
 
 The format is checked by the `issue-forms` job in `ci` using [check-jsonschema](https://github.com/python-jsonschema/check-jsonschema). A misspelled `type` or a misplaced `validations` is something GitHub only reveals at run time, and it shows up as **the template disappearing from the issue creation page**. The schema applied is the one from [SchemaStore](https://www.schemastore.org/), bundled with the tool itself, so changes on GitHub's side are picked up by updating the tool version.
 

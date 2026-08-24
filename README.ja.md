@@ -38,7 +38,8 @@
 | [.github/pull_request_template.md](.github/pull_request_template.md) | PR の本文テンプレート |
 | [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE) | issue のテンプレート（Bug report / Task） |
 | [CLAUDE.md](CLAUDE.md) | Claude Code が読み込む指示書。自分のリポジトリの指示書で置き換える |
-| [.claude/settings.json](.claude/settings.json) | CLAUDE.md の規則を強制する Claude Code の設定とフック |
+| [.claude/settings.json](.claude/settings.json) | Claude Code の設定。下のフックスクリプトをここで配線する |
+| [.claude/hooks/](.claude/hooks) | CLAUDE.md の規則を強制するフックスクリプト |
 | [.claude/skills/docs-check/SKILL.md](.claude/skills/docs-check/SKILL.md) | 重複・ドキュメント陳腐化チェックの手順（`/docs-check` で実行） |
 | [mise.toml](mise.toml) | CI で使う検査ツールのバージョン |
 | [.markdownlint-cli2.jsonc](.markdownlint-cli2.jsonc) | Markdown の書式検査 markdownlint-cli2 の設定 |
@@ -234,7 +235,7 @@ editorconfig-checker と shfmt は、他の検査ツールと同じく本体を 
 
 **セキュリティ上の問題は issue に書かないでください。** 脆弱性の非公開報告を有効にしているので、Security タブから非公開で報告できます（[SECURITY.md](SECURITY.md)）。
 
-`config.yml` の `contact_links` には絶対 URL しか書けないため、テンプレートには `https://github.com/OWNER/REPO/discussions/new/choose` と置いてあり、[セットアップ](#セットアップ)のスクリプトが実際のリポジトリ名へ書き換えます。**書き換わった `config.yml` はコミットが必要です**（GitHub は main 上のファイルを読むため）。手で直しても構いません。その場合スクリプトは何もしません。
+`config.yml` の `contact_links` には絶対 URL しか書けないため、テンプレートには `https://github.com/OWNER/REPO/discussions/new/choose` と置いてあり、[セットアップ](#セットアップ)のスクリプトが実際のリポジトリ名へ書き換えます。**書き換わった `config.yml` はコミットが必要です。** 手で直しても構いません。その場合スクリプトは何もしません。
 
 書式は `ci` の `issue-forms` ジョブが [check-jsonschema](https://github.com/python-jsonschema/check-jsonschema) で検査します。`type` の綴り違いや `validations` の位置違いは GitHub 側では実行時にしか分からず、**issue の作成画面からテンプレートが消える**という形で現れるためです。当てるスキーマは [SchemaStore](https://www.schemastore.org/) のものがツール本体に同梱されていて、GitHub 側の変更への追随はツールのバージョン更新に含まれます。
 

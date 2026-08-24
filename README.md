@@ -53,7 +53,7 @@ The rest is reference material to look up when you need it.
 | [SECURITY.md](SECURITY.md) | Where to report vulnerabilities and what is in scope |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | The contributing guide (GitHub shows it on the issue / PR creation pages) |
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Code of conduct (based on Contributor Covenant v2.1) |
-| [LICENSE](LICENSE) | The MIT license. It ends with a line permitting a repository created from the template to replace the file |
+| [LICENSE](LICENSE) | The MIT license ([License](#license)) |
 | `*.ja.md` | The Japanese versions: [README.ja.md](README.ja.md) and the four files under `docs/`. The `.md` of the same name is the English original |
 
 **The English is the authoritative version** ([Bilingual documentation](CONTRIBUTING.md#bilingual-documentation)). Everything a tool emits or matches on stays English-only, which is why this document quotes markers such as `DRIFT` and `UNKNOWN` in English.
@@ -275,4 +275,4 @@ The guarantee that the contents behind a given tag never change is a supply-chai
 
 ## License
 
-MIT ([LICENSE](LICENSE))
+MIT ([LICENSE](LICENSE)). Repositories created from this template may replace that file.

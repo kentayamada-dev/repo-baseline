@@ -53,7 +53,7 @@
 | [SECURITY.md](SECURITY.md) | 脆弱性の報告先と対象の範囲 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 貢献の手引き（GitHub が issue / PR の作成画面に表示します） |
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | 行動規範（Contributor Covenant v2.1 ベース） |
-| [LICENSE](LICENSE) | MIT ライセンス。末尾に、テンプレートから作ったリポジトリはこのファイルを差し替えてよいという一文があります |
+| [LICENSE](LICENSE) | MIT ライセンス（[ライセンス](#ライセンス)） |
 | `*.ja.md` | 日本語版。[README.ja.md](README.ja.md) と `docs/` の 4 ファイルにあり、拡張子を除いた同名の `.md` が英語版です |
 
 **正となるのは英語版です**（[Bilingual documentation](CONTRIBUTING.md#bilingual-documentation)）。ツールが出力・照合するものは英語のみなので、`DRIFT` や `UNKNOWN` などのマーカーはこの文書でも英語のまま引用しています。
@@ -275,4 +275,4 @@ immutable releases を有効にしているため、有効化後に公開した�
 
 ## ライセンス
 
-MIT（[LICENSE](LICENSE)）
+MIT（[LICENSE](LICENSE)）。テンプレートから作ったリポジトリは、このファイルを差し替えてかまいません。

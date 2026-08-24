@@ -46,7 +46,7 @@
     commitMessageTopic: 'replace {{{depName}}} with {{{newName}}}',
   },
   prBodyTemplate: '{{{header}}}{{{footer}}}',
-  prHeader: 'New versions of dependencies are available. If `ci` passes, review the changes and merge.\n\
+  prHeader: 'New versions of dependencies are available. If [`ci`](https://github.com/{{{repository}}}/actions/workflows/ci.yml) passes, review the changes and merge.\n\
 \n\
 | Package | Update | Change |\n\
 | --- | --- | --- |\
@@ -64,7 +64,7 @@ If you close this PR without merging it, no PR will be created for the same upda
 {{#if isReplacement}}\n\
 \n\
 `{{{depName}}}` has been deprecated, so it is replaced with the community-recommended successor package.{{/if}}',
-  prFooter: 'This PR was created automatically by Renovate (configuration in `.github/renovate.json5`, how it works in `docs/renovate.md`).',
+  prFooter: 'This PR was created automatically by Renovate (configuration in [`.github/renovate.json5`](https://github.com/{{{repository}}}/blob/{{{baseBranch}}}/.github/renovate.json5), how it works in [`docs/renovate.md`](https://github.com/{{{repository}}}/blob/{{{baseBranch}}}/docs/renovate.md)).',
   packageRules: [
     {
       description: 'Group everything except major updates into a single PR (fewer reviews and merges)',

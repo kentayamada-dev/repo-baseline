@@ -3,8 +3,8 @@
 ## Critical rules
 
 - When the user's intent or the implementation approach is unclear, or you are torn between approaches, ask the user right away instead of guessing
+- Claude edits files only; do not commit, push, or create a PR unless explicitly asked
 - README.md and the files under `docs/` are bilingual pairs (`X.md` English-first + `X.ja.md`, same PR — see CONTRIBUTING.md); everything else is English-only, code comments included
-- PR titles must follow Conventional Commits — on squash merge the PR title becomes, verbatim, the commit title on main
 
 ## Project overview
 
@@ -16,10 +16,10 @@ A template repository providing groundwork for repository operations: branch pro
 
 ## Repository etiquette
 
+- PR titles must follow Conventional Commits
 - main cannot be pushed to; every change lands through a PR, squash merge only (`gh pr merge --auto --squash` merges once CI passes; non-interactive runs need the explicit `--squash`)
 - Before committing, fetch and integrate the latest remote main, then create a working branch from it
-- Claude edits files only; do not commit, push, or create a PR unless explicitly asked
-- Write commit messages and PR titles/bodies in English (squash keeps both on main: the title as the commit title, the messages concatenated into its body)
+- Write commit messages and PR titles/bodies in English (on squash the PR title becomes, verbatim, the commit title on main, and the messages are concatenated into its body)
 
 ## References
 

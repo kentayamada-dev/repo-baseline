@@ -16,8 +16,10 @@
 # before anything is deleted, to be rewritten by hand. Only mentions that spell the
 # path out are found; prose such as "see the README" is not.
 #
-# Only tracked files are deleted, so local files git does not track (for example
-# .claude/settings.local.json) are left where they are.
+# Only tracked files are deleted, with one exception: .claude is removed
+# wholesale, so untracked local files under it (for example
+# .claude/settings.local.json) go with it. Elsewhere untracked files are left
+# where they are.
 #
 # The script deletes itself as its last act, so it runs once.
 #
@@ -53,7 +55,7 @@ cd "$repo_root"
 # editing the list here.
 TARGET_GROUPS=(
   "Documentation about the template itself:README.md README.ja.md docs CLAUDE.md"
-  "Claude Code settings and skills that back CLAUDE.md:.claude"
+  "Claude Code settings, skills, and hook scripts that back CLAUDE.md:.claude"
   "Community documents written for this repository:CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md"
   "This script:scripts/cleanup-template.sh"
 )
@@ -132,6 +134,9 @@ fi
 echo "These ${#targets[@]} tracked files belong to the template and will be deleted."
 echo
 printf '%s' "$listing"
+echo
+echo "The .claude directory is removed wholesale, so untracked local files under it"
+echo "(for example .claude/settings.local.json) are deleted with it."
 
 if [[ "$write_stub" == true ]]; then
   echo
@@ -190,8 +195,10 @@ MSG
 # git status alongside whatever else is in progress, and a file the user has already
 # edited does not abort the run.
 rm -f -- "${targets[@]}"
-# Directories that held nothing but deleted files. Untracked leftovers keep theirs.
-rmdir docs .claude/skills/docs-check .claude/skills .claude 2>/dev/null || true
+# .claude is deliberately removed wholesale, untracked local files included; docs
+# keeps untracked leftovers, so it is only removed once the deletions emptied it.
+rm -rf .claude
+rmdir docs 2>/dev/null || true
 
 echo
 echo "Deleted ${#targets[@]} files."

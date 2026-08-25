@@ -1,6 +1,8 @@
 ---
 name: docs-check
-description: Review every tracked file in the project against the no-duplication rule — comments vs nearby code and repo docs, docs vs code and easily found references, bilingual pairs — and flag docs and comments that have drifted from what the code actually does. Use when asked to check for duplication or stale docs.
+description: Review every tracked file against the no-duplication rule in CLAUDE.md — comments vs nearby code and repo docs, docs vs code and easily found references, bilingual pairs — and flag docs and comments that have drifted from what the code actually does.
+disable-model-invocation: true
+allowed-tools: Read Grep Glob Bash(git ls-files)
 ---
 
 # docs-check

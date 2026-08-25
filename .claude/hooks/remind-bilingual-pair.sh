@@ -9,7 +9,7 @@
 # no counterpart. Without CLAUDE_PROJECT_DIR there is nothing to be relative
 # to, and the hook stays quiet rather than guessing.
 
-jq -c --arg root "${CLAUDE_PROJECT_DIR:-}" 'if ((.tool_input.file_path // "" | strings)
+jq -c --arg root "${CLAUDE_PROJECT_DIR:-}" 'if $root != "" and ((.tool_input.file_path // "" | strings)
     | ltrimstr($root + "/")
     | test("^README(\\.ja)?\\.md$|^docs/.+\\.md$"))
   then {hookSpecificOutput: {

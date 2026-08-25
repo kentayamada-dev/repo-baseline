@@ -16,8 +16,8 @@ export CLAUDE_PROJECT_DIR=/project
 
 # run_hook <script-name> <stdin-json>
 #
-# The round trip with the exit status left as it is, for the tests that are
-# about that status. Everything else goes through answer.
+# The bare round trip; the tests reach it through answer, which adds the
+# status check.
 run_hook() {
   printf '%s' "$2" | bash "${HOOKS_DIR}/$1"
 }

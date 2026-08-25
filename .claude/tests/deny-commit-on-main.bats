@@ -46,6 +46,7 @@ assert_decision() {
   assert_decision '' 'git switch -c feat && git commit -m x'
   assert_decision '' 'git checkout -b feat && git commit -m x'
   assert_decision '' 'git switch --create feat && git commit -m x'
+  assert_decision '' $'git switch -c feat\ngit commit -m x'
 }
 
 @test "denies a commit that switches branches only afterwards" {
@@ -72,24 +73,34 @@ assert_decision() {
   assert_decision '' 'git log --oneline | grep commit'
 }
 
+@test "stays silent when the words fall on different lines" {
+  assert_decision '' $'git log --oneline\ngrep commit'
+}
+
 @test "stays silent outside a git repository" {
   cd "${BATS_TEST_TMPDIR}" || return 1
   assert_decision '' 'git commit -m "message"'
 }
 
-@test "stays silent when the tool call carries no command" {
-  assert_answer deny-commit-on-main.sh '{}' .hookSpecificOutput.permissionDecision ''
+# The hook fails closed: on main, a tool call it cannot read is denied rather
+# than waved through.
+@test "denies on main when the tool call carries no command" {
+  assert_answer deny-commit-on-main.sh '{}' .hookSpecificOutput.permissionDecision deny
 }
 
-@test "stays silent when the command is not text" {
+@test "denies on main when the command is not text" {
   assert_answer deny-commit-on-main.sh '{"tool_input": {"command": 123}}' \
-    .hookSpecificOutput.permissionDecision ''
+    .hookSpecificOutput.permissionDecision deny
 }
 
-# Exit code 2 is the one that would block the Bash call. Anything the hook
-# cannot read is not a verdict, so it has to leave the call alone.
-@test "does not block the call when the tool call is not JSON" {
-  run --separate-stderr run_hook deny-commit-on-main.sh 'not json'
-  [ -z "${output}" ]
-  [ "${status}" -ne 2 ]
+@test "denies on main when the tool call is not JSON" {
+  assert_answer deny-commit-on-main.sh 'not json' .hookSpecificOutput.permissionDecision deny
+}
+
+# Off main there is nothing for this hook to protect, so failing closed does
+# not reach there: even an unreadable tool call passes.
+@test "stays silent off main even for an unreadable tool call" {
+  git switch -q -c feat
+  assert_answer deny-commit-on-main.sh 'not json' .hookSpecificOutput.permissionDecision ''
+  assert_answer deny-commit-on-main.sh '{}' .hookSpecificOutput.permissionDecision ''
 }

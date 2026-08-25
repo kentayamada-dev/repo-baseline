@@ -19,6 +19,7 @@
 | `zizmor` | ワークフローのセキュリティ（攻撃経路） | [zizmor](#zizmor) |
 | `gitleaks` | コミット履歴に混ざった秘密情報 | [gitleaks](#gitleaks) |
 | `setup-script` | 一度だけ実行するスクリプトの実行確認 | [setup-script](#setup-script) |
+| `hooks` | Claude Code のフックが CLAUDE.md どおりに許可・拒否するか | [hooks](#hooks) |
 | `issue-forms` | issue フォームがスキーマに沿っているか | [issue のテンプレート](../README.ja.md#issue-のテンプレート) |
 | `renovate-config` | Renovate 設定の検証 | [設定の検証](renovate.ja.md#設定の検証) |
 | `osv-scanner-diff` | PR が新たに持ち込む依存の脆弱性 | [osv-scanner](#osv-scanner) |
@@ -301,6 +302,23 @@ excludes:
 `gh` と `jq` は GitHub ホストの runner に最初から入っているため、[mise.toml](../mise.toml) には足していません。認証はワークフローの `GITHUB_TOKEN` で足ります。
 
 private リポジトリではこのジョブを走らせません（セットアップスクリプトが public 以外を拒否するため、回せば必ず落ちます）。スキップは `ci` 側で成功扱いになるので、private でも PR は止まりません。削除スクリプトは private でも動きますが、このテンプレート自体が public 専用なので、独立したジョブを立てるには及びません。
+
+## hooks
+
+[ci.yml](../.github/workflows/ci.yml) の `hooks` ジョブが、[.claude/tests/](../.claude/tests) にある [bats](https://bats-core.readthedocs.io/) のテストで、隣の [.claude/hooks/](../.claude/hooks) にあるフックスクリプトを検査します。フックは標準入力に JSON でツール呼び出しを受け取り、標準出力に JSON で判定を返すフィルタなので、テストはコマンドを 1 つ流し込んで判定を読むだけです。
+
+```bash
+git ls-files -z '.claude/tests/*.bats' \
+  | xargs -0 -r bats --print-output-on-failure
+```
+
+テストが押さえるのは当たり前の場合ではなく境目です。先にブランチを作るコミットは通し、ブランチを作らない同じコミットは拒否する。`git log | grep push` は push ではない。この境目はシェルを解析せず文字列で判定しているので、その代償である誤検知（引用しただけの `echo "git commit"` も拒否される）もあわせて固定してあります。そこが落ちたときは、挙動が良くなったのではなく変わったということです。
+
+結線もテストの対象です。フックは [.claude/settings.json](../.claude/settings.json) を通してしか呼ばれないため、設定を直さずにスクリプトの名前を変えた場合、答えるイベントと違うイベントに登録した場合、テストファイルのないフックスクリプトを足した場合は、いずれもこのジョブが落ちます。スクリプトだけを見るテストでは、どれも素通りします。
+
+ブランチ規則のテストは bats の一時ディレクトリに使い捨てのリポジトリを作るため、判定が runner のいるブランチに左右されることはありません。`jq` は GitHub ホストの runner に最初から入っていて、そもそも呼ぶのはフック自身なので、[mise.toml](../mise.toml) に足すのは bats だけです。
+
+テストを独立した `tests/` ではなく `.claude/` の下に置いてあるのは、[cleanup-template.sh](../scripts/cleanup-template.sh) が検査対象のフックごと持っていくようにするためと、テンプレートから作ったリポジトリが自分のテストに一番自然な置き場を空けておくためです。その後もこのジョブが緑のままなのは `-r` のおかげで、`.bats` が 1 つも残らなければ bats は起動しません。ジョブ自体は他の残骸と一緒に削除してください。
 
 ## osv-scanner
 

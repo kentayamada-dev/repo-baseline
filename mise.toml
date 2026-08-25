@@ -4,6 +4,7 @@
 # fail when the lock disagrees with mise.toml.
 [tools]
 actionlint = "1.7.12"
+bats = "1.14.0"
 "pipx:check-jsonschema" = "0.38.0"
 editorconfig-checker = "3.11.1"
 ghalint = "1.5.6"

@@ -295,6 +295,28 @@ jobs:
       - name: Dry-run the cleanup script
         run: ./scripts/cleanup-template.sh --dry-run
 
+  hooks:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4
+        with:
+          version: 2026.8.8
+          install_args: bats
+          cache_save: ${{ github.event_name == 'push' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Test the Claude Code hooks
+        run: |
+          set -euo pipefail
+          git ls-files -z '.claude/tests/*.bats' \
+            | xargs -0 -r bats --print-output-on-failure
+
   issue-forms:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
@@ -361,7 +383,7 @@ jobs:
     # results here (without always() this job itself is skipped and the required
     # check is never reported).
     if: always()
-    needs: [codeql, pr-title, format, actionlint, shellcheck, hadolint, typos, lychee, markdownlint, ghalint, zizmor, gitleaks, setup-script, issue-forms, renovate-config, osv-scanner-diff]
+    needs: [codeql, pr-title, format, actionlint, shellcheck, hadolint, typos, lychee, markdownlint, ghalint, zizmor, gitleaks, setup-script, hooks, issue-forms, renovate-config, osv-scanner-diff]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     permissions:

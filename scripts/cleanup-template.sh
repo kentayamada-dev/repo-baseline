@@ -55,7 +55,7 @@ cd "$repo_root"
 # editing the list here.
 TARGET_GROUPS=(
   "Documentation about the template itself:README.md README.ja.md docs CLAUDE.md"
-  "Claude Code settings, skills, and hook scripts that back CLAUDE.md:.claude"
+  "Claude Code settings, skills, hook scripts, and the tests behind them that back CLAUDE.md:.claude"
   "Community documents written for this repository:CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md"
   "This script:scripts/cleanup-template.sh"
 )

@@ -56,9 +56,12 @@ assert_reminder() {
   assert_reminder '' /elsewhere/docs/ci-jobs.md
 }
 
+# The README at the filesystem root is the trap here: with no root to trim, a
+# bare leading slash must not be mistaken for the project prefix.
 @test "stays silent when the project directory is unknown" {
   unset CLAUDE_PROJECT_DIR
   assert_reminder '' /project/README.md
+  assert_reminder '' /README.md
 }
 
 @test "stays silent when the tool call carries no file path" {

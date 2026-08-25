@@ -42,6 +42,10 @@ assert_decision() {
   assert_decision '' 'gh pr view 1 | grep create'
 }
 
+@test "stays silent when the words fall on different lines" {
+  assert_decision '' $'git log --oneline\ngrep push'
+}
+
 @test "stays silent for a read-only git or gh command" {
   assert_decision '' 'git status'
   assert_decision '' 'gh pr list'
@@ -51,21 +55,17 @@ assert_decision() {
   assert_decision '' 'ls -la'
 }
 
-@test "stays silent when the tool call carries no command" {
-  assert_answer ask-before-commit-push-pr.sh '{}' .hookSpecificOutput.permissionDecision ''
+# The hook fails closed: a tool call it cannot read gets the same "ask",
+# because a command the hook cannot see must not slip past unconfirmed.
+@test "asks when the tool call carries no command" {
+  assert_answer ask-before-commit-push-pr.sh '{}' .hookSpecificOutput.permissionDecision ask
 }
 
-@test "stays silent when the command is not text" {
+@test "asks when the command is not text" {
   assert_answer ask-before-commit-push-pr.sh '{"tool_input": {"command": 123}}' \
-    .hookSpecificOutput.permissionDecision ''
+    .hookSpecificOutput.permissionDecision ask
 }
 
-# Exit code 2 is the one that would block the Bash call. Anything the hook
-# cannot read is not a verdict, so it has to leave the call alone and say why
-# on stderr.
-@test "does not block the call when the tool call is not JSON" {
-  run --separate-stderr run_hook ask-before-commit-push-pr.sh 'not json'
-  [ -z "${output}" ]
-  [ "${status}" -ne 2 ]
-  [ -n "${stderr}" ]
+@test "asks when the tool call is not JSON" {
+  assert_answer ask-before-commit-push-pr.sh 'not json' .hookSpecificOutput.permissionDecision ask
 }

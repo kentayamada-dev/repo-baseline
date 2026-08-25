@@ -27,9 +27,12 @@ permissions: {}
 
 jobs:
   renovate:
+    # Fork-initiated events carry no secrets, so a fork PR on a renovate/*
+    # branch would fail the token check and open a bogus failure issue.
     if: >-
       github.event_name != 'pull_request' ||
       (github.event.pull_request.merged &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
       startsWith(github.event.pull_request.head.ref, 'renovate/'))
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
@@ -166,15 +169,21 @@ jobs:
           DETAILS: ${{ needs.renovate.outputs.lookup_details }}
         run: |
           set -eo pipefail
+          # A fence longer than any backtick run inside DETAILS cannot be closed
+          # by the content, so the code block renders intact whatever the log holds.
+          fence='```'
+          while printf '%s\n' "${DETAILS}" | grep -qF "${fence}"; do
+            fence="${fence}\`"
+          done
           {
             echo "The latest version of some dependencies could not be fetched. **The run itself succeeded; only these dependencies will not get update PRs.**"
             echo
             if [ -n "${DETAILS}" ]; then
               echo "Here is the warning Renovate emitted."
               echo
-              echo '```text'
+              echo "${fence}text"
               printf '%s\n' "${DETAILS}"
-              echo '```'
+              echo "${fence}"
             else
               echo "To see which dependencies are affected, look at the \`Package lookup failures\` line in the run log."
             fi

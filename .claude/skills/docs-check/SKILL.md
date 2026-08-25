@@ -1,8 +1,9 @@
 ---
 name: docs-check
-description: Review every tracked file against the no-duplication rule in CLAUDE.md — comments vs nearby code and repo docs, docs vs code and easily found references, bilingual pairs — and flag docs and comments that have drifted from what the code actually does.
+description: Review every tracked file against the no-duplication rule in CLAUDE.md — comments vs nearby code and repo docs, docs vs code and easily found references, bilingual pairs — and flag docs and comments that have drifted from what the code actually does. Pass `diff` to review only the files in the current diff.
 disable-model-invocation: true
-allowed-tools: Read Grep Glob Bash(git ls-files)
+argument-hint: "[diff]"
+allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git diff:*)
 ---
 
 # docs-check
@@ -11,9 +12,23 @@ Review every tracked file against the no-duplication rule in CLAUDE.md. When the
 
 ## Scope
 
+Full review (default):
+
 ```bash
 git ls-files
 ```
+
+Diff-only review — when invoked with the `diff` argument, review only the files in the current diff: branch commits not yet on origin/main, staged and unstaged edits, and untracked files.
+
+```bash
+git diff --name-only origin/main
+```
+
+```bash
+git ls-files --others --exclude-standard
+```
+
+In diff-only mode, still read each changed file's related files (its bilingual counterpart, the doc describing a changed script, sibling docs) for context, and report a finding whenever a changed file is on either side of it — an updated `X.md` whose `X.ja.md` was not touched is a finding. Skip duplication purely between unchanged files.
 
 Review each file's comments and docs against everything else in the repo — read related files together (a script and the doc describing it, sibling docs, both halves of a bilingual pair) so cross-file duplication surfaces. In a large result, group findings by file and order them by how much text the fix removes.
 

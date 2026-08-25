@@ -143,7 +143,7 @@ The rows are iterated with `{{#each upgrades}}`, and duplicates are removed by t
 
 ## Labels on PRs and issues
 
-Update PRs get `dependencies` (`labels` in [renovate.json5](../.github/renovate.json5)). [The update list issue](#the-update-list-issue) gets the same label. The label itself is created by the script in [Setup](../README.md#setup), so when changing this, fix `LABELS_EXPECTED` in the script to match ([Labels](../README.md#labels)).
+Update PRs get `dependencies` (`labels` in [renovate.json5](../.github/renovate.json5)). [The update list issue](#the-update-list-issue) gets the same label; [Labels](../README.md#labels) covers who creates it and what to keep in step when changing it.
 
 When self-hosting, the PR author is whoever owns `RENOVATE_TOKEN` (usually you), so filtering by `author:app/renovate` as with the hosted version is not possible, which makes this label the only marker.
 

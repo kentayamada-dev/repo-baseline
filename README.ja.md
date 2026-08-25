@@ -65,7 +65,7 @@
 テンプレートから自分のリポジトリを作った直後に行う、一度きりの作業です。
 
 1. **セットアップスクリプトを実行する**（このすぐ下）
-2. **スクリプトが書き換えた [config.yml](.github/ISSUE_TEMPLATE/config.yml) をコミットする** — GitHub は main 上のファイルを読むため、コミットするまで issue テンプレート内のリンクは変わりません（[issue のテンプレート](#issue-のテンプレート)）
+2. **スクリプトが書き換えた [config.yml](.github/ISSUE_TEMPLATE/config.yml) をコミットする**（[issue のテンプレート](#issue-のテンプレート)）
 3. **secret `SETTINGS_TOKEN` を登録する**（[作成手順](docs/drift-check.ja.md#settings_token-の作成)） — 未登録だと[設定のずれの検査](docs/drift-check.ja.md#設定のずれの検査)が `UNKNOWN` で落ちて issue が立ちます
 4. **[Renovate](docs/renovate.ja.md#renovate) を使うなら secret `RENOVATE_TOKEN` を登録する**（[作成手順](docs/renovate.ja.md#トークンの登録)） — 未登録だと月曜の定期実行が落ちて issue が立ちます
 5. **テンプレートに属するファイルを削除する**（[テンプレート自身のファイルを削除する](#テンプレート自身のファイルを削除する)） — ドキュメント、Claude Code の設定、コミュニティ文書はいずれもこのテンプレートについての記述であって、あなたのリポジトリのものではありません

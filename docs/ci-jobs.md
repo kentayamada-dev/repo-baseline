@@ -192,7 +192,7 @@ lychee --offline --include-fragments --no-progress .
 
 **This job does not check external URLs.** With `--offline` removed, a temporary outage or a rate limit at the far end would fail CI and turn it red for reasons unrelated to the code. External URLs are covered by a scheduled run in a separate workflow ([Scheduled external link checks](#scheduled-external-link-checks)).
 
-Anchors are matched against the IDs lychee generates from headings. The generation rules match GitHub's rendering (`#### Two exceptions` → `#two-exceptions`; the second and later headings with the same wording get `-1`, `-2`).
+Anchors are matched against the IDs lychee generates from headings. The generation rules match GitHub's rendering, Japanese headings included — the text becomes the ID as-is (`#### Two exceptions` → `#two-exceptions`, `#### 2 つの例外` → `#2-つの例外`; the second and later headings with the same wording get `-1`, `-2`).
 
 ### Scheduled external link checks
 
@@ -237,7 +237,7 @@ Four things differ from the defaults.
 | `MD041` (first line is an h1) | Disabled | [pull_request_template.md](../.github/pull_request_template.md) is pasted as part of a PR body, where not starting with an h1 is correct |
 | Notation styles (`MD003` `MD004` `MD029` `MD046` `MD048` `MD049` `MD050`) | Fixed to concrete values instead of `consistent` | `consistent` only aligns things within a single file |
 
-**Body text is written one paragraph per line, with no line breaks inside a paragraph.** Markdown renders a newline inside a paragraph as a space, so wrapping is a rendering decision rather than a source one, and keeping a paragraph on one line keeps diffs paragraph-sized. That is why the body limit of `MD013` is raised to 1000 characters.
+**Body text is written one paragraph per line, with no line breaks inside a paragraph.** Markdown renders a newline inside a paragraph as a space (in Japanese text that surfaces as a stray space in the middle of the rendered sentence), so wrapping is a rendering decision rather than a source one, and keeping a paragraph on one line keeps diffs paragraph-sized — fixing a word does not reflow every line after it. That is why the body limit of `MD013` is raised to 1000 characters.
 
 Trailing whitespace is covered by `MD009`. What [.editorconfig](../.editorconfig) leaves out by excluding `*.md` ([the exceptions](../README.md#two-exceptions)) is filled in here.
 

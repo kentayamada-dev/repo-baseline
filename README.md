@@ -65,7 +65,7 @@ The rest is reference material to look up when you need it.
 One-time work to do right after creating your own repository from the template.
 
 1. **Run the setup script** (just below)
-2. **Commit the [config.yml](.github/ISSUE_TEMPLATE/config.yml) the script rewrote** — GitHub reads the file on main, so the link inside the issue template does not change until you commit it ([Issue templates](#issue-templates))
+2. **Commit the [config.yml](.github/ISSUE_TEMPLATE/config.yml) the script rewrote** ([Issue templates](#issue-templates))
 3. **Register the `SETTINGS_TOKEN` secret** ([how to create it](docs/drift-check.md#creating-settings_token)) — without it the [settings drift check](docs/drift-check.md#settings-drift-check) fails with "UNKNOWN" and opens an issue
 4. **If you use [Renovate](docs/renovate.md#renovate), register the `RENOVATE_TOKEN` secret** ([how to create it](docs/renovate.md#registering-the-token)) — without it the Monday scheduled run fails and opens an issue
 5. **Delete the files that belong to the template** ([Removing the template's own files](#removing-the-templates-own-files)) — the documentation, the Claude Code settings and the community documents describe this template, not your repository

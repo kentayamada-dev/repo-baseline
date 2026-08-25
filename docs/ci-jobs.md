@@ -19,6 +19,7 @@ The list of check jobs present in [ci.yml](../.github/workflows/ci.yml) in the i
 | `zizmor` | Workflow security (attack paths) | [zizmor](#zizmor) |
 | `gitleaks` | Secrets that crept into the commit history | [gitleaks](#gitleaks) |
 | `setup-script` | That the run-once scripts actually run | [setup-script](#setup-script) |
+| `hooks` | That the Claude Code hooks still allow and refuse what CLAUDE.md says | [hooks](#hooks) |
 | `issue-forms` | Whether the issue forms follow the schema | [Issue templates](../README.md#issue-templates) |
 | `renovate-config` | Validation of the Renovate configuration | [Validating the configuration](renovate.md#validating-the-configuration) |
 | `osv-scanner-diff` | Vulnerabilities in dependencies the PR newly introduces | [osv-scanner](#osv-scanner) |
@@ -301,6 +302,23 @@ The `setup-script` job in [ci.yml](../.github/workflows/ci.yml) actually runs bo
 `gh` and `jq` ship with GitHub-hosted runners, so they are not added to [mise.toml](../mise.toml). The workflow's `GITHUB_TOKEN` is enough for authentication.
 
 This job does not run on a private repository (the setup script refuses anything but public, so running it would always fail). A skip counts as a success in `ci`, so PRs are not blocked on a private repository either. The cleanup script would run there, but the template is for public repositories only, so it is not worth a job of its own.
+
+## hooks
+
+The `hooks` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in [.claude/tests/](../.claude/tests) against the hook scripts next to them in [.claude/hooks/](../.claude/hooks). A hook is a filter — the tool call arrives as JSON on stdin, the verdict leaves as JSON on stdout — so one test feeds one command and reads the verdict back.
+
+```bash
+git ls-files -z '.claude/tests/*.bats' \
+  | xargs -0 -r bats --print-output-on-failure
+```
+
+What the tests are for is the borders, not the obvious cases: a commit that creates its branch first is allowed while the same commit without the branch is denied, and `git log | grep push` is not a push. Those borders are matched textually rather than by parsing the shell, so the false positives that come with it (a quoted `echo "git commit"` is denied all the same) are asserted too — a failure there means the behaviour moved, not that it improved.
+
+The wiring is tested too, because a hook is only ever reached through [.claude/settings.json](../.claude/settings.json): a script renamed without the setting, a hook registered under an event it does not answer with, and a hook script with no test file of its own each fail the job — none of them would fail a test of the scripts alone.
+
+The tests for the branch rule create a throwaway repository under the bats temporary directory, so their verdict never depends on the branch the runner happens to be on. `jq` ships with GitHub-hosted runners and is what the hooks themselves call, so bats is the only addition to [mise.toml](../mise.toml).
+
+The tests live under `.claude/` rather than in a `tests/` directory of their own, so that [cleanup-template.sh](../scripts/cleanup-template.sh) takes them out with the hooks they exercise, and so that the repository built from the template keeps the obvious place for its own tests free. `-r` is what keeps this job green afterwards: with no `.bats` file left, bats is never started. Delete the job along with the rest of the leftovers.
 
 ## osv-scanner
 

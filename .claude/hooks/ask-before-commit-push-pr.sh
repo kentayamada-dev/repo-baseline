@@ -7,8 +7,10 @@
 # [^|;&] keeps each match inside one pipeline segment, so "git log | grep push"
 # does not trigger. Matching is textual, not a shell parse, so a command that
 # merely quotes the words (echo "git push") still asks — a cheap false positive.
+# `strings` drops a tool call whose command is not text: there is nothing to
+# read there, and a verdict must never rest on a guess.
 
-jq -c 'if ((.tool_input.command // "")
+jq -c 'if ((.tool_input.command // "" | strings)
     | test("\\bgit\\b[^|;&]*\\b(commit|push)\\b|\\bgh\\b[^|;&]*\\bpr\\b[^|;&]*\\bcreate\\b"))
   then {hookSpecificOutput: {
     hookEventName: "PreToolUse",

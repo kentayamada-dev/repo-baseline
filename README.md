@@ -41,6 +41,7 @@ The rest is reference material to look up when you need it.
 | [.claude/settings.json](.claude/settings.json) | Claude Code settings, wiring up the hook scripts below |
 | [.claude/hooks/](.claude/hooks) | The hook scripts that enforce the rules in CLAUDE.md |
 | [.claude/skills/docs-check/SKILL.md](.claude/skills/docs-check/SKILL.md) | The duplication and stale-docs check to run (run as `/docs-check`) |
+| [.claude/tests/](.claude/tests) | Tests for the hook scripts and the settings that wire them up, run in CI ([hooks](docs/ci-jobs.md#hooks)) |
 | [mise.toml](mise.toml) | Versions of the check tools used in CI |
 | [.markdownlint-cli2.jsonc](.markdownlint-cli2.jsonc) | Configuration for markdownlint-cli2, the Markdown format checker |
 | [.typos.toml](.typos.toml) | Configuration for typos, the typo checker |

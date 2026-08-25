@@ -17,7 +17,7 @@ A template repository providing groundwork for repository operations: branch pro
 ## Repository etiquette
 
 - PR titles must follow Conventional Commits
-- main cannot be pushed to; every change lands through a PR, squash merge only (`gh pr merge --auto --squash` merges once CI passes; non-interactive runs need the explicit `--squash`)
+- main cannot be pushed to; every change lands through a PR, squash merge only
 - Before committing, fetch and integrate the latest remote main, then create a working branch from it
 - Write commit messages and PR titles/bodies in English (on squash the PR title becomes, verbatim, the commit title on main, and the messages are concatenated into its body)
 

@@ -141,7 +141,7 @@ Renovate には更新状況を issue にまとめる [Dependency Dashboard](http
 
 ## PR と issue に付くラベル
 
-更新 PR には `dependencies` が付きます（[renovate.json5](../.github/renovate.json5) の `labels`）。[更新の一覧の issue](#更新の一覧の-issue) にも同じラベルを付けます。ラベル自体は [セットアップ](../README.ja.md#セットアップ)のスクリプトが作るので、ここを変えるときはスクリプトの `LABELS_EXPECTED` も合わせて直してください（[ラベル](../README.ja.md#ラベル)）。
+更新 PR には `dependencies` が付きます（[renovate.json5](../.github/renovate.json5) の `labels`）。[更新の一覧の issue](#更新の一覧の-issue) にも同じラベルを付けます。ラベルを誰が作り、変えるときに何を合わせて直すかは[ラベル](../README.ja.md#ラベル)にあります。
 
 セルフホストでは PR の作成者が `RENOVATE_TOKEN` の持ち主（多くの場合あなた自身）になり、ホスト版のような `author:app/renovate` では絞れないため、このラベルが唯一の目印です。
 

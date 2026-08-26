@@ -3,7 +3,6 @@
   extends: ['config:recommended', 'helpers:pinGitHubActionDigestsToSemver'],
   dependencyDashboard: false,
   labels: ['dependencies'],
-  timezone: 'Asia/Tokyo',
   semanticCommits: 'enabled',
   pinDigests: true,
   prHourlyLimit: 0,
@@ -45,26 +44,21 @@
     commitMessageAction: '',
     commitMessageTopic: 'replace {{{depName}}} with {{{newName}}}',
   },
-  prBodyTemplate: '{{{header}}}{{{footer}}}',
-  prHeader: 'New versions of dependencies are available. If `ci` passes, review the changes and merge.\n\
-\n\
-| Package | Update | Change |\n\
-| --- | --- | --- |\
-{{#each upgrades}}\
-{{#unless (and (equals depName (lookup (lookup @root.upgrades (add @index -1)) "depName")) (equals displayTo (lookup (lookup @root.upgrades (add @index -1)) "displayTo")))}}\
-\n| {{{depNameLinked}}} \
-| {{#if (equals updateType "major")}}major{{else}}{{#if (equals updateType "minor")}}minor{{else}}{{#if (equals updateType "patch")}}patch{{else}}{{#if (equals updateType "digest")}}digest{{else}}{{#if (equals updateType "pinDigest")}}pin digest{{else}}{{#if (equals updateType "pin")}}pin version{{else}}{{#if (equals updateType "replacement")}}replacement{{else}}{{#if (equals updateType "rollback")}}rollback{{else}}{{{updateType}}}{{/if}}{{/if}}{{/if}}{{/if}}{{/if}}{{/if}}{{/if}}{{/if}} \
-| {{#if displayFrom}}`{{{displayFrom}}}` → {{/if}}`{{{displayTo}}}` |\
-{{/unless}}\
-{{/each}}\n\
-\n\
-A PR that has fallen behind main is rebased on the next Renovate run. To catch it up right away, click Update branch on the PR page.\n\
-\n\
-If you close this PR without merging it, no PR will be created for the same update again.\
+  prBodyTemplate: '{{{header}}}{{{table}}}{{{footer}}}',
+  prBodyColumns: ['Package', 'Update', 'Change'],
+  prBodyDefinitions: {
+    Update: '{{#if (equals updateType "pinDigest")}}pin digest{{else}}{{#if (equals updateType "pin")}}pin version{{else}}{{{updateType}}}{{/if}}{{/if}}',
+    Change: '{{#if displayFrom}}`{{{displayFrom}}}` → {{/if}}`{{{displayTo}}}`',
+  },
+  prHeader: 'If `ci` passes, review the changes and merge.\
 {{#if isReplacement}}\n\
 \n\
 `{{{depName}}}` has been deprecated, so it is replaced with the community-recommended successor package.{{/if}}',
-  prFooter: 'This PR was created automatically by Renovate (configuration in [`.github/renovate.json5`](https://github.com/{{{repository}}}/blob/{{{baseBranch}}}/.github/renovate.json5), how it works in [`docs/renovate.md`](https://github.com/{{{repository}}}/blob/{{{baseBranch}}}/docs/renovate.md)).',
+  prFooter: 'A PR that has fallen behind main is rebased on the next Renovate run. To catch it up right away, click Update branch on the PR page.\n\
+\n\
+If you close this PR without merging it, no PR will be created for the same update again.\n\
+\n\
+This PR was created automatically by Renovate (configuration in [`.github/renovate.json5`](https://github.com/{{{repository}}}/blob/{{{baseBranch}}}/.github/renovate.json5), how it works in [`docs/renovate.md`](https://github.com/{{{repository}}}/blob/{{{baseBranch}}}/docs/renovate.md)).',
   packageRules: [
     {
       description: 'Group everything except major updates into a single PR (fewer reviews and merges)',

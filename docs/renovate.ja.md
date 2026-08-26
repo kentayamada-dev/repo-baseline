@@ -4,7 +4,7 @@
 
 [renovate.yml](../.github/workflows/renovate.yml) が [Renovate](https://docs.renovatebot.com/) を週 1 回（月曜 09:00 JST）実行し、依存に新しいバージョンが出ていれば更新 PR を作ります。[Docker Hub の renovate/renovate](https://hub.docker.com/r/renovate/renovate) をそのまま動かすセルフホスト方式で、Mend のホスト版 GitHub App は使いません。更新できる依存があるときは `Dependency updates are available` という issue が立ちます（[更新の一覧の issue](#更新の一覧の-issue)）。
 
-実行のきっかけはワークフロー側の cron（UTC 固定）ですが、Renovate 自身の日時の判定は [renovate.json5](../.github/renovate.json5) の `timezone: 'Asia/Tokyo'` に従います（既定は UTC）。`schedule` を書いたときの時刻や「毎週」「毎月」の区切りがこれで決まります。
+実行のきっかけはワークフロー側の cron なので、関わる時刻はすべて UTC です（Renovate 自身の日時の判定も既定の UTC のままです）。将来 [renovate.json5](../.github/renovate.json5) に `schedule` を書くときは、時刻が UTC で解釈されないよう `timezone` を一緒に設定してください。
 
 イメージはジョブの `container:` に指定してあり、ステップはその中で走ります（ラッパーの action は挟みません）。ジョブコンテナ特有の注意点 2 つは、ワークフロー側で対処してあります。1 つはコンテナを `--user root` で動かしていることです。イメージの非 root ユーザーでは runner が作るファイルに書けず、拾った内容を後続のジョブへ渡す `$GITHUB_OUTPUT` も、runner が `HOME` に向ける `/github/home` も書けません。もう 1 つはステップに `shell: bash` を指定していることです。ジョブコンテナでは `run:` の既定シェルが `sh` になります。
 
@@ -101,16 +101,15 @@ Renovate には更新状況を issue にまとめる [Dependency Dashboard](http
 
 ### 本文
 
-`prBodyTemplate` を `{{{header}}}{{{footer}}}` にして、Renovate が生成する部分をすべて外しました。文面は `prHeader`（この PR が何か、更新の表、リベースの仕方）と `prFooter`（Renovate が作った PR であること、設定とこの文書の場所）に書いたものだけになります。置き換えの PR にだけ出る注記は `prHeader` の中の `{{#if isReplacement}}` で出し分けています。
+`prBodyTemplate` を `{{{header}}}{{{table}}}{{{footer}}}` にして、Renovate が生成する部分のうち更新の表だけを残し、それ以外を外しました。表の前後の文面は `prHeader`（この PR をどうするか、`{{#if isReplacement}}` で出し分ける置き換えの PR にだけ出る注記）と `prFooter`（遅れた PR の追いつかせ方、閉じたらどうなるか、Renovate が作った PR であること、設定とこの文書の場所）に書いたものだけになります。
 
-外したものは次の 6 つです。戻すときは `prBodyTemplate` に書き足すだけです。
+外したものは次の 5 つです。戻すときは `prBodyTemplate` に書き足すだけです。
 
 | 外したもの | 何だったか | 代わり |
 | --- | --- | --- |
-| `table` | 更新の表。直前に決まった 1 文が必ず付く | `prHeader` で自前で組む（[表](#表)） |
-| `notes` | rebase の案内などの注記 | 必要なものを `prHeader` に書く |
+| `notes` | rebase の案内などの注記 | 必要なものを `prFooter` に書く |
 | `warnings` | 設定の警告と「一部の依存を解決できなかった」の通知 | 専用の issue（[依存を解決できなかったとき](#依存を解決できなかったとき)） |
-| `configDescription` | schedule / automerge / rebase / ignore の説明 | `prHeader` の注記 |
+| `configDescription` | schedule / automerge / rebase / ignore の説明 | `prFooter` の注記 |
 | `controls` | rebase・retry のチェックボックス | PR 画面の Update branch |
 | `changelogs` | Release Notes の折りたたみ | 表のパッケージ名のリンク先で読む |
 
@@ -120,7 +119,7 @@ Renovate には更新状況を issue にまとめる [Dependency Dashboard](http
 
 ### 表
 
-更新の一覧の表は、Renovate の `table` を使わず `prHeader` の中で自前で組んでいます。`table` は直前に `This PR contains the following updates:` という 1 文を必ず付け、そこだけを消す手段がないためです。
+更新の一覧の表は Renovate の `table` で、列を `prBodyColumns` と `prBodyDefinitions` で調整しています。`table` は直前に `This PR contains the following updates:` という 1 文を必ず付け、そこだけを消す手段はありません。以前はこの 1 文を避けるために `prHeader` の中で表を自前で組んでいましたが、その重複排除は `upgrades` の並び順に依存していました。`table` は並び順によらず同じ更新の出現を 1 行にまとめるため、`table` を使い、決まった 1 文は受け入れることにしました。
 
 ```text
 | Package | Update | Change |
@@ -129,13 +128,9 @@ Renovate には更新状況を issue にまとめる [Dependency Dashboard](http
 | [jdx/mise](https://github.com/jdx/mise) | patch | `2026.8.8` → `2026.9.1` |
 ```
 
-- `Update` は Renovate の `updateType` を平易な語に置き換えています（`major` / `minor` / `patch` / `digest` など）。対応する語を用意していない値が来たらそのまま出します。
-- Renovate の既定の表にある `Type` の列（`depType`）は落としました。値がマネージャ側の識別子で、それだけ見てもほとんど意味がないためです。
+- `Update` は `updateType` のうち pin 系の 2 値だけを平易な語に置き換えます（`pin` → `pin version`、`pinDigest` → `pin digest`）。それ以外の値（`major` / `minor` / `patch` / `digest` など）はもともと平易な語なのでそのまま出します。
+- Renovate の既定の表にある `Type` と `Pending` の列は落としました。`Type`（`depType`）は値がマネージャ側の識別子で、それだけ見てもほとんど意味がないためです。`Pending` は更新を遅らせるオプション（`minimumReleaseAge` など）を使うときにだけ値が入り、この設定では使っていないためです。
 - `Change` は更新前が空のとき（バージョンの固定など）に更新後だけを出します。
-
-行は `{{#each upgrades}}` で回し、`{{#unless}}` の比較で重複を除きます。`upgrades` には「1 ファイルの 1 箇所」ごとに要素が入るため、同じ action を多数の箇所で使うこのリポジトリでは素朴に回すと同じ行が何度も出ます。1 つ前の要素と依存名・更新後の値を見比べて、同じなら行を出しません。
-
-**この重複排除は `upgrades` が依存名の順に並ぶことに依存しています。** `fileReplacePosition` を付けるマネージャ（gradle や maven など）を使う構成になると並び順が変わり、同じ依存が複数行に出ます。その場合は `prBodyTemplate` に `{{{table}}}` を戻して `prHeader` の表を消せば、Renovate 側の重複排除に戻せます（決まった 1 文も戻ります）。
 
 **文面の間違いは[設定の検証](#設定の検証)では捕まりません。** validator が見るのはキーと値の書式で、テンプレートを展開した結果までは見ないためです。変えたときは `gh workflow run renovate.yml` で実際に PR を作って確認してください。
 

@@ -4,7 +4,7 @@
 
 [renovate.yml](../.github/workflows/renovate.yml) runs [Renovate](https://docs.renovatebot.com/) once a week (Monday 09:00 JST) and creates update PRs when newer versions of dependencies are available. It is self-hosted, running [renovate/renovate from Docker Hub](https://hub.docker.com/r/renovate/renovate) as is, rather than using Mend's hosted GitHub App. When there are dependencies that can be updated, a `Dependency updates are available` issue is opened ([The update list issue](#the-update-list-issue)).
 
-The trigger is the cron on the workflow side (fixed to UTC), but Renovate's own date and time handling follows `timezone: 'Asia/Tokyo'` in [renovate.json5](../.github/renovate.json5) (the default is UTC). That decides the times used when a `schedule` is written, and where "weekly" and "monthly" boundaries fall.
+The trigger is the cron on the workflow side, so all times involved are UTC (Renovate's own date and time handling is also left at its UTC default). If a `schedule` is ever added to [renovate.json5](../.github/renovate.json5), set `timezone` along with it so its times are not read as UTC.
 
 The image is specified in the job's `container:` and the steps run inside it (no wrapper action is involved). The two gotchas specific to job containers are handled on the workflow side. The container runs with `--user root`, because the image's non-root user cannot write the files the runner creates: neither `$GITHUB_OUTPUT`, through which the job passes what it found to the later jobs, nor the `/github/home` the runner points `HOME` at. And the step sets `shell: bash`, because the default shell for `run:` in a job container is `sh`.
 
@@ -103,16 +103,15 @@ The `chore(deps):` prefix comes from `semanticCommits: 'enabled'` (a preset incl
 
 ### Body
 
-`prBodyTemplate` is set to `{{{header}}}{{{footer}}}`, which removes everything Renovate generates. The wording is only what is written in `prHeader` (what this PR is, the table of updates, how to rebase) and `prFooter` (that Renovate created the PR, and where the configuration and this document live). The note that appears only on replacement PRs is switched with `{{#if isReplacement}}` inside `prHeader`.
+`prBodyTemplate` is set to `{{{header}}}{{{table}}}{{{footer}}}`, which keeps Renovate's table of updates and removes the rest of what Renovate generates. The wording around the table is only what is written in `prHeader` (what to do with the PR, and a note switched with `{{#if isReplacement}}` that appears only on replacement PRs) and `prFooter` (how a stale PR catches up, what closing means, that Renovate created the PR, and where the configuration and this document live).
 
-Six things were removed. To bring one back, just add it to `prBodyTemplate`.
+Five things were removed. To bring one back, just add it to `prBodyTemplate`.
 
 | What was removed | What it was | The replacement |
 | --- | --- | --- |
-| `table` | The table of updates. It is always preceded by a fixed sentence | Assembled by hand in `prHeader` ([Table](#table)) |
-| `notes` | Notes such as rebase instructions | Whatever is needed is written in `prHeader` |
+| `notes` | Notes such as rebase instructions | Whatever is needed is written in `prFooter` |
 | `warnings` | Configuration warnings and the "some dependencies could not be resolved" notice | A dedicated issue ([When a dependency cannot be resolved](#when-a-dependency-cannot-be-resolved)) |
-| `configDescription` | Explanations of schedule / automerge / rebase / ignore | The notes in `prHeader` |
+| `configDescription` | Explanations of schedule / automerge / rebase / ignore | The notes in `prFooter` |
 | `controls` | The rebase and retry checkboxes | Update branch on the PR page |
 | `changelogs` | The collapsed Release Notes | Read them by following the package name link in the table |
 
@@ -122,7 +121,7 @@ Since `changelogs` was removed, fetching release notes is turned off too (`fetch
 
 ### Table
 
-The table listing the updates is assembled by hand inside `prHeader` rather than using Renovate's `table`, because `table` always prepends the sentence `This PR contains the following updates:` and there is no way to remove just that.
+The table listing the updates is Renovate's `table`, with the columns adjusted through `prBodyColumns` and `prBodyDefinitions`. `table` always prepends the sentence `This PR contains the following updates:` and there is no way to remove just that; an earlier revision assembled the table by hand in `prHeader` to avoid it, but its deduplication depended on the ordering of `upgrades`, while `table` folds occurrences of the same update into one row regardless of order, so `table` is used and the fixed sentence accepted.
 
 ```text
 | Package | Update | Change |
@@ -131,13 +130,9 @@ The table listing the updates is assembled by hand inside `prHeader` rather than
 | [jdx/mise](https://github.com/jdx/mise) | patch | `2026.8.8` → `2026.9.1` |
 ```
 
-- `Update` maps Renovate's `updateType` to plain wording (`major` / `minor` / `patch` / `digest`, and so on). A value with no mapping is printed as is.
-- The `Type` column (`depType`) present in Renovate's default table was dropped, because its value is a manager-side identifier that means little on its own.
+- `Update` rewrites only the two pin-related `updateType` values into plain wording (`pin` → `pin version`, `pinDigest` → `pin digest`); every other value (`major` / `minor` / `patch` / `digest`, and so on) is already a plain word and is printed as is.
+- The `Type` and `Pending` columns present in Renovate's default table were dropped: `Type` (`depType`) is a manager-side identifier that means little on its own, and `Pending` only carries a value with update-delaying options (such as `minimumReleaseAge`) that this configuration does not use.
 - `Change` prints only the new value when there is no old one (when pinning a version, for example).
-
-The rows are iterated with `{{#each upgrades}}`, and duplicates are removed by the comparison in `{{#unless}}`. `upgrades` holds one element per occurrence per file, so in this repository, where the same action is used in many places, iterating naively prints the same row over and over. Each element is compared with the previous one on dependency name and new value, and the row is skipped when they match.
-
-**This deduplication depends on `upgrades` being ordered by dependency name.** With a configuration that uses a manager which sets `fileReplacePosition` (gradle, maven, and so on) the ordering changes and the same dependency appears on multiple rows. In that case restoring `{{{table}}}` in `prBodyTemplate` and removing the table from `prHeader` reverts to Renovate's own deduplication (the fixed leading sentence comes back too).
 
 **Mistakes in the wording are not caught by [Validating the configuration](#validating-the-configuration).** The validator looks at the format of keys and values, not at the result of expanding a template. After changing it, create a real PR with `gh workflow run renovate.yml` and check.
 

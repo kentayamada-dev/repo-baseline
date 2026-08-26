@@ -1,3 +1,4 @@
+#:schema https://mise.jdx.dev/schema/mise.json
 # Intentionally no mise.lock. Renovate can only rewrite versions in mise.toml
 # (updating the lock requires permission settings on the self-hosted side), and
 # with a lock present mise-action uses `mise install --locked`, so update PRs

@@ -170,7 +170,7 @@ feat!: switch the config file format to TOML
 
 Titles are constrained because the setting that always uses the PR title as the commit title on squash (`squash_merge_commit_title=PR_TITLE`) means **the PR title becomes the title of the commit that lands on main**. Only the title is constrained; the body is not checked. The commit messages you stacked locally are concatenated into the body of the squash commit and left on main.
 
-The validation is done by CI's `pr-title` job, and since it is part of the required check `ci` it cannot be bypassed. When it fails, fixing the PR title re-runs the check automatically (no new push needed). If you add or remove types, fix the `PATTERN` in [ci.yml](.github/workflows/ci.yml) and the table above together.
+The validation is done by CI's `pr-title` job, and since it is part of the required check `ci` it cannot be bypassed. When it fails, fixing the PR title re-runs the check automatically (no new push needed). If you add or remove types, fix the `PATTERN` in [ci.yml](.github/workflows/ci.yml), the table above, and the type list in the prompt hook in [.claude/settings.json](.claude/settings.json) together.
 
 Re-validation works because `edited` was added to the `types` of `pull_request`. With the default, fixing the title does not start the workflow and it stays failed. The cost is that [CodeQL](docs/ci-jobs.md#codeql) also runs on every title edit, but skipping only `codeql` with an `if` would let the gate job `ci`, which treats `skipped` as a success, paint the previous failure green, so that is not done.
 

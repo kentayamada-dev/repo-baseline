@@ -217,7 +217,7 @@ editorconfig-checker and shfmt are installed with mise and run like the other ch
 
 #### Two exceptions
 
-`*.sh` is excluded from the `indent_size` check (`indent_size = unset` in `.editorconfig`). The contents of a heredoc are display text printed to the CLI, where aligning the width to a multiple of 2 is meaningless, but editorconfig-checker cannot tell heredoc content apart from code. The excluded files are still covered by shfmt in the same `format` job (shfmt does not format the contents of a heredoc, so it can check without any exclusion). The source of truth for indentation in `*.sh` is the shfmt flags, not `.editorconfig`.
+Shell scripts are excluded from the `indent_size` check (see [.editorconfig](.editorconfig)). The contents of a heredoc are display text printed to the CLI, where aligning the width to a multiple of 2 is meaningless, but editorconfig-checker cannot tell heredoc content apart from code. The excluded files are still covered by shfmt in the same `format` job (shfmt does not format the contents of a heredoc, so it can check without any exclusion). The source of truth for indentation in shell scripts is the shfmt flags, not `.editorconfig`.
 
 `*.md` is excluded from the trailing-whitespace check because in Markdown two trailing spaces mean a hard line break. Removing them uniformly would change the rendering. The excluded files are still covered by `MD009` in markdownlint-cli2 ([markdownlint-cli2](docs/ci-jobs.md#markdownlint-cli2)).
 

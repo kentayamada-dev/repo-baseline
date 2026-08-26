@@ -217,7 +217,7 @@ editorconfig-checker と shfmt は、他の検査ツールと同じく本体を 
 
 #### 2 つの例外
 
-`*.sh` を `indent_size` の検査から外しています（`.editorconfig` で `indent_size = unset`）。heredoc の中は CLI に出力する表示用テキストで、幅を 2 の倍数に揃える意味がありませんが、editorconfig-checker は heredoc を区別できないためです。外した分は同じ `format` ジョブの shfmt が見ます（shfmt は heredoc の中身を整形の対象にしないので、除外を作らずに検査できます）。`*.sh` のインデントの情報源は、`.editorconfig` ではなく shfmt のフラグです。
+シェルスクリプトを `indent_size` の検査から外しています（[.editorconfig](.editorconfig) 参照）。heredoc の中は CLI に出力する表示用テキストで、幅を 2 の倍数に揃える意味がありませんが、editorconfig-checker は heredoc を区別できないためです。外した分は同じ `format` ジョブの shfmt が見ます（shfmt は heredoc の中身を整形の対象にしないので、除外を作らずに検査できます）。シェルスクリプトのインデントの情報源は、`.editorconfig` ではなく shfmt のフラグです。
 
 `*.md` を行末空白の検査から外しているのは、Markdown では行末の半角スペース 2 つが強制改行を意味するためです。一律に削除すると表示が変わります。外した分は markdownlint-cli2 の `MD009` が見ます（[markdownlint-cli2](docs/ci-jobs.ja.md#markdownlint-cli2)）。
 

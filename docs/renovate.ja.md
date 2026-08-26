@@ -195,9 +195,10 @@ docker run --rm -v "$PWD:/repo:ro" -w /repo \
 
 | 書き方 | 拾う仕組み |
 | --- | --- |
-| `uses: actions/checkout@<sha> # v7.0.1` | github-actions マネージャ（自動） |
+| `uses: actions/checkout@<commit sha> # v7.0.1` | github-actions マネージャ（自動） |
+| `uses: <owner>/<repo>/.github/workflows/<name>.yml@<commit sha> # v2.5.1` | 同上（自動） |
 | `uses: docker://<イメージ>:<タグ>@sha256:...` | 同上（自動） |
-| ジョブの `container: image:` | 同上（自動） |
+| ジョブの `container:` — `image: <イメージ>:<タグ>@sha256:...` | 同上（自動） |
 | [mise.toml](../mise.toml) の `[tools]` | mise マネージャ（自動） |
 | `jdx/mise-action` の `version` 入力 | github-actions マネージャ（自動） |
 
@@ -209,14 +210,12 @@ docker run --rm -v "$PWD:/repo:ro" -w /repo \
 
 `pinDigests: true` により、action と Docker イメージはタグに加えてダイジェストまで固定されます。タグは後から中身を差し替えられるため、タグだけの指定では CI が何を実行しているか確定しません。固定しておけば、中身が変わるのは Renovate の PR をマージしたときだけになります。
 
-| 対象 | 書き方 | 更新 |
-| --- | --- | --- |
-| action | `uses: actions/checkout@<commit sha> # v7.0.1` | Renovate が SHA と末尾コメントの両方を維持 |
-| `docker://` のイメージ | `uses: docker://<イメージ>:<タグ>@sha256:...` | Renovate がタグとダイジェストの両方を更新 |
-| ジョブの `container:` | `image: <イメージ>:<タグ>@sha256:...` | 同上 |
-| 再利用可能ワークフロー | `uses: <owner>/<repo>/.github/workflows/<name>.yml@<commit sha> # v<タグ>` | action と同じ |
+| 対象 | 更新 |
+| --- | --- |
+| action、再利用可能ワークフロー | Renovate が SHA と末尾コメントの両方を維持 |
+| `docker://` のイメージ、ジョブの `container:` | Renovate がタグとダイジェストの両方を更新 |
 
-ジョブを追加するときも同じ形で書いてください。最初の 1 回もダイジェストを手で付ける必要はありません（Renovate が固定します）。手で付けるときは次のように取得します。
+ジョブを追加するときも同じ形（[何が更新対象になるか](#何が更新対象になるか)）で書いてください。最初の 1 回もダイジェストを手で付ける必要はありません（Renovate が固定します）。手で付けるときは次のように取得します。
 
 ```bash
 gh api repos/actions/checkout/commits/v7.0.1 --jq .sha    # action の commit SHA

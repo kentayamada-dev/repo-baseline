@@ -233,7 +233,7 @@ Four things differ from the defaults.
 | Rule | Change | Reason |
 | --- | --- | --- |
 | `MD009` (trailing whitespace) | `strict` | Hard line breaks (two trailing spaces) are not used |
-| `MD013` (line length) | 1000 characters for body text, 120 for code blocks, disabled for headings and tables | Body text is written one paragraph per line rather than wrapped (just below). Code blocks cannot be wrapped, and a long one turns into a horizontal scroll |
+| `MD013` (line length) | 1000 characters for body text (headings and tables inherit the same limit), 120 for code blocks | Body text is written one paragraph per line rather than wrapped (just below). Code blocks cannot be wrapped, and a long one turns into a horizontal scroll |
 | `MD041` (first line is an h1) | Disabled | [pull_request_template.md](../.github/pull_request_template.md) is pasted as part of a PR body, where not starting with an h1 is correct |
 | Notation styles (`MD003` `MD004` `MD029` `MD046` `MD048` `MD049` `MD050`) | Fixed to concrete values instead of `consistent` | `consistent` only aligns things within a single file |
 

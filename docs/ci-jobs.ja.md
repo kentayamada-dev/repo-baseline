@@ -115,7 +115,7 @@ mise 本体のバージョンは [mise-action](https://github.com/jdx/mise-actio
 
 [ci.yml](../.github/workflows/ci.yml) の `actionlint` ジョブが、ワークフロー定義そのものを検査します。存在しないコンテキストの参照、式の型の誤り、action の入力名の間違いなど、実行してみるまで気付けない不備を PR の時点で落とします。対象は `.github/workflows/` 配下すべてで、引数での指定は不要です。
 
-シェルの検査の分担: **ワークフロー内の `run:` は actionlint（が呼ぶ shellcheck）、リポジトリ内の `*.sh` は [shellcheck](#shellcheck) ジョブ、Dockerfile の `RUN` は [hadolint](#hadolint)（に同梱の ShellCheck）** が見ます。
+シェルの検査の分担: **ワークフロー内の `run:` は actionlint（が呼ぶ shellcheck）、リポジトリ内の `*.sh` / `*.bash` は [shellcheck](#shellcheck) ジョブ、Dockerfile の `RUN` は [hadolint](#hadolint)（に同梱の ShellCheck）** が見ます。
 
 **このジョブでは actionlint と一緒に shellcheck も入れています。** actionlint は shellcheck が PATH に無いと `run:` の検査を黙って飛ばすためです。同様に、`run:` に Python を書くようになったら pyflakes を [mise.toml](../mise.toml) と `install_args` に足してください。
 

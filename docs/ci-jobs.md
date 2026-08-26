@@ -115,7 +115,7 @@ Things to note:
 
 The `actionlint` job in [ci.yml](../.github/workflows/ci.yml) checks the workflow definitions themselves. References to nonexistent contexts, type errors in expressions, wrong action input names — flaws you would not notice until the workflow runs — are caught at PR time. It covers everything under `.github/workflows/` with no arguments needed.
 
-How the shell checks divide up: **`run:` inside a workflow is covered by actionlint (and the shellcheck it calls), `*.sh` in the repository by the [shellcheck](#shellcheck) job, and `RUN` in a Dockerfile by [hadolint](#hadolint) (and the ShellCheck bundled with it)**.
+How the shell checks divide up: **`run:` inside a workflow is covered by actionlint (and the shellcheck it calls), `*.sh` / `*.bash` in the repository by the [shellcheck](#shellcheck) job, and `RUN` in a Dockerfile by [hadolint](#hadolint) (and the ShellCheck bundled with it)**.
 
 **This job installs shellcheck alongside actionlint**, because actionlint silently skips checking `run:` when shellcheck is not on PATH. Likewise, once you start writing Python in `run:`, add pyflakes to [mise.toml](../mise.toml) and to `install_args`.
 

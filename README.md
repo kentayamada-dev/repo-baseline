@@ -34,6 +34,8 @@ The rest is reference material to look up when you need it.
 | [.github/workflows/repo-settings.yml](.github/workflows/repo-settings.yml) | Scheduled check for drift in repository settings and rulesets (daily / [Settings drift check](docs/drift-check.md#settings-drift-check)) |
 | [.github/workflows/link-check.yml](.github/workflows/link-check.yml) | Scheduled check of the external links in the documentation (daily / [Scheduled external link checks](docs/ci-jobs.md#scheduled-external-link-checks)) |
 | [.github/workflows/renovate.yml](.github/workflows/renovate.yml) | Runs Renovate ([The update list issue](docs/renovate.md#the-update-list-issue)) |
+| [.github/scripts/](.github/scripts) | The scripts the scheduled workflows above call to report a failing check as an issue and to retract it |
+| [.github/scripts/tests/](.github/scripts/tests) | Tests for the scripts above, run in CI ([script-tests](docs/ci-jobs.md#script-tests)) |
 | [.github/renovate.json5](.github/renovate.json5) | Renovate configuration |
 | [.github/pull_request_template.md](.github/pull_request_template.md) | The PR body template |
 | [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE) | Issue templates (bug report / task) |
@@ -211,7 +213,7 @@ git ls-files -z '*.sh' '*.bash' \
 Things to note about shfmt:
 
 - **Passing even one flag makes shfmt ignore `.editorconfig`.** The formatting of shell scripts is decided by these options alone. Options such as `-sr`, which puts spaces around redirects, are left off to match the existing style. To change that, add to these flags.
-- **Multiple statements put on one line separated by `;` are rewritten onto separate lines.** One-line guards such as `cmd || { echo "..." >&2; exit 1; }` are expanded too. There is no flag to disable it, so everything under `scripts/` is written in that expanded form.
+- **Multiple statements put on one line separated by `;` are rewritten onto separate lines.** One-line guards such as `cmd || { echo "..." >&2; exit 1; }` are expanded too. There is no flag to disable it, so every shell script in the repository is written in that expanded form.
 
 editorconfig-checker and shfmt are installed with mise and run like the other check tools ([Installing and verifying the tools](docs/ci-jobs.md#installing-and-verifying-the-tools), versions in [mise.toml](mise.toml)). **The command name for editorconfig-checker is `ec`** (the `editorconfig-checker` written in [mise.toml](mise.toml) is the package name in the [aqua](https://aquaproj.github.io/) registry, which differs from the binary name).
 
@@ -260,12 +262,12 @@ The script in [Setup](#setup) creates four labels. None of them are applied by h
 | --- | --- | --- |
 | `bug` | Bug report issues | `labels` in [bug_report.yml](.github/ISSUE_TEMPLATE/bug_report.yml) |
 | `enhancement` | Task issues | `labels` in [task.yml](.github/ISSUE_TEMPLATE/task.yml) |
-| `dependencies` | Renovate update PRs / the update list issue | `labels` in [renovate.json5](.github/renovate.json5) / `gh issue edit --add-label` in [renovate.yml](.github/workflows/renovate.yml) |
-| `maintenance` | Notification issues opened by failed scheduled checks | `gh issue edit --add-label` in each workflow |
+| `dependencies` | Renovate update PRs / the update list issue | `labels` in [renovate.json5](.github/renovate.json5) / `--label dependencies` in [renovate.yml](.github/workflows/renovate.yml) |
+| `maintenance` | Notification issues opened by failed scheduled checks | `--label maintenance` in each workflow |
 
 `maintenance` exists so that, when browsing issues, bugs reported by people can be distinguished from maintenance work found by automated checks. It expresses the kind of content, not "who created it" (notification issues can be filtered with `author:app/github-actions`).
 
-Labels are applied to notification issues with `gh issue edit --add-label` after creation rather than with `--label` on `gh issue create` because `gh` exits with an error when the label is missing. Passing it to `create` would mean the issue itself is never opened, losing the means of notification. When the label cannot be applied, only a warning is printed and the notification itself survives.
+Labels are applied to notification issues by [upsert-issue.sh](.github/scripts/upsert-issue.sh); why after creation rather than on it — and why a missing label costs only a warning — is explained in its `--help`.
 
 The [settings drift check](docs/drift-check.md#settings-drift-check) verifies daily that the labels have not been deleted (on the issue template side, GitHub silently ignores a nonexistent label, so a deletion goes unnoticed). When changing `labels` in a template or in `renovate.json5`, fix `LABELS_EXPECTED` in the script to match (the check only looks at the definitions in the script).
 

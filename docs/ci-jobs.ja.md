@@ -20,6 +20,7 @@
 | `gitleaks` | コミット履歴に混ざった秘密情報 | [gitleaks](#gitleaks) |
 | `setup-script` | 一度だけ実行するスクリプトの実行確認 | [setup-script](#setup-script) |
 | `hooks` | Claude Code のフックが CLAUDE.md どおりに許可・拒否するか | [hooks](#hooks) |
+| `script-tests` | ワークフローが呼ぶスクリプトの判断が変わっていないか | [script-tests](#script-tests) |
 | `issue-forms` | issue フォームがスキーマに沿っているか | [issue のテンプレート](../README.ja.md#issue-のテンプレート) |
 | `renovate-config` | Renovate 設定の検証 | [設定の検証](renovate.ja.md#設定の検証) |
 | `osv-scanner-diff` | PR が新たに持ち込む依存の脆弱性 | [osv-scanner](#osv-scanner) |
@@ -319,6 +320,23 @@ git ls-files -z '.claude/tests/*.bats' \
 ブランチ規則のテストは bats の一時ディレクトリに使い捨てのリポジトリを作るため、判定が runner のいるブランチに左右されることはありません。`jq` は GitHub ホストの runner に最初から入っていて、そもそも呼ぶのはフック自身なので、[mise.toml](../mise.toml) に足すのは bats だけです。
 
 テストを独立した `tests/` ではなく `.claude/` の下に置いてあるのは、[cleanup-template.sh](../scripts/cleanup-template.sh) が検査対象のフックごと持っていくようにするためと、テンプレートから作ったリポジトリが自分のテストに一番自然な置き場を空けておくためです。その後もこのジョブが緑のままなのは `-r` のおかげで、`.bats` が 1 つも残らなければ bats は起動しません。ジョブ自体は他の残骸と一緒に削除してください。
+
+## script-tests
+
+[ci.yml](../.github/workflows/ci.yml) の `script-tests` ジョブが、[.github/scripts/tests/](../.github/scripts/tests) にある [bats](https://bats-core.readthedocs.io/) のテストで、1 つ上の [.github/scripts/](../.github/scripts) にあるスクリプトを検査します。定期実行のワークフローが、落ちた検査を issue として報告し、通ったら取り下げるために呼ぶ 2 つです。
+
+```bash
+git ls-files -z '.github/scripts/tests/*.bats' \
+  | xargs -0 -r bats --print-output-on-failure
+```
+
+テストは `gh` をスタブに差し替えるので（仕組みは [helper.bash](../.github/scripts/tests/helper.bash) にあります）、GitHub には何も届かずトークンも要りません。だからこそ、その呼び出しの周りにある判断をそもそも検査できます。どの issue を同じ issue とみなすか（タイトルの完全一致、しかも文字どおり）、すでに開いている issue をどうするか（放置・コメント追記・本文の差し替えの 3 通りで、呼ぶワークフローごとに違う）、消えたラベルは issue ではなく警告で済ませること、です。
+
+このロジックをワークフローに直接書かず `.github/scripts/` に置いてあるのは、テストから触れるようにするためです。`run:` の中身は囲んでいるワークフローを起動しないと動かせず、この 2 つの場合それは定期実行の検査が落ちるのを待つことを意味します。
+
+[hooks](#hooks) と同じく、[mise.toml](../mise.toml) に足すのは bats だけです。[shellcheck](#shellcheck) と [format](../README.ja.md#書式の統一) はどちらも `git ls-files` で `*.sh` を辿るため、何もしなくてもこのスクリプトを拾います。
+
+[hooks](#hooks) のテストと違い、こちらは [cleanup-template.sh](../scripts/cleanup-template.sh) の後も残ります。スクリプトを呼ぶワークフローが残るので、スクリプトとそのテストも残ります。
 
 ## osv-scanner
 

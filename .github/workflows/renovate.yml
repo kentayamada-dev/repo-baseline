@@ -96,8 +96,13 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     permissions:
+      contents: read
       issues: write
     steps:
+      # The issue is reported by a script in the repository, so it has to be checked out.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Open an issue on failure
         if: needs.renovate.result == 'failure'
         env:
@@ -109,12 +114,6 @@ jobs:
           DOC_URL: ${{ github.server_url }}/${{ github.repository }}/blob/main/docs/renovate.md
         run: |
           set -eo pipefail
-          existing="$(gh issue list --state open --limit 100 --json number,title \
-            | jq -r --arg t "${TITLE}" 'map(select(.title == $t)) | if length > 0 then .[0].number else empty end')"
-          if [ -n "${existing}" ]; then
-            echo "issue #${existing} already exists, not creating another"
-            exit 0
-          fi
           {
             echo "The [\`renovate\`](${WORKFLOW_URL}) run failed. While it keeps failing, no dependency update PRs arrive."
             echo
@@ -129,9 +128,11 @@ jobs:
             echo
             echo "Once fixed, this issue closes automatically on the next run."
           } >"${RUNNER_TEMP}/issue.md"
-          url="$(gh issue create --title "${TITLE}" --body-file "${RUNNER_TEMP}/issue.md")"
-          gh issue edit "${url}" --add-label maintenance ||
-            echo "::warning::Could not add the maintenance label. Check whether it still exists (./scripts/sync-repo-config.sh can create it)"
+          ./.github/scripts/upsert-issue.sh \
+            --title "${TITLE}" \
+            --body-file "${RUNNER_TEMP}/issue.md" \
+            --label maintenance \
+            --on-existing skip
 
       # For results that are neither success nor failure, such as cancelled, neither
       # open nor close the issue.
@@ -143,20 +144,20 @@ jobs:
           TITLE: Renovate runs are failing
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          set -eo pipefail
-          numbers="$(gh issue list --state open --limit 100 --json number,title \
-            | jq -r --arg t "${TITLE}" '.[] | select(.title == $t) | .number')"
-          for number in ${numbers}; do
-            gh issue close "${number}" --comment "Closing because the run passed: ${RUN_URL}"
-          done
+          ./.github/scripts/close-issues-by-title.sh "${TITLE}" \
+            "Closing because the run passed: ${RUN_URL}"
 
   lookup:
     needs: [renovate]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     permissions:
+      contents: read
       issues: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # Log contents are external text, so they go through env, not run.
       - name: Open or update the issue
         if: needs.renovate.outputs.lookup_failed == 'true'
@@ -199,16 +200,11 @@ jobs:
             echo
             echo "Once every dependency resolves on the next run, this issue closes automatically."
           } >"${RUNNER_TEMP}/issue.md"
-          existing="$(gh issue list --state open --limit 100 --json number,title \
-            | jq -r --arg t "${TITLE}" 'map(select(.title == $t)) | if length > 0 then .[0].number else empty end')"
-          if [ -n "${existing}" ]; then
-            gh issue edit "${existing}" --body-file "${RUNNER_TEMP}/issue.md"
-            echo "updated the body of issue #${existing}"
-            exit 0
-          fi
-          url="$(gh issue create --title "${TITLE}" --body-file "${RUNNER_TEMP}/issue.md")"
-          gh issue edit "${url}" --add-label maintenance ||
-            echo "::warning::Could not add the maintenance label. Check whether it still exists (./scripts/sync-repo-config.sh can create it)"
+          ./.github/scripts/upsert-issue.sh \
+            --title "${TITLE}" \
+            --body-file "${RUNNER_TEMP}/issue.md" \
+            --label maintenance \
+            --on-existing edit
 
       - name: Close the issue when every dependency resolves
         if: needs.renovate.outputs.lookup_failed == 'false'
@@ -218,21 +214,21 @@ jobs:
           TITLE: Some dependencies cannot be resolved
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          set -eo pipefail
-          numbers="$(gh issue list --state open --limit 100 --json number,title \
-            | jq -r --arg t "${TITLE}" '.[] | select(.title == $t) | .number')"
-          for number in ${numbers}; do
-            gh issue close "${number}" --comment "Closing because every dependency resolved: ${RUN_URL}"
-          done
+          ./.github/scripts/close-issues-by-title.sh "${TITLE}" \
+            "Closing because every dependency resolved: ${RUN_URL}"
 
   dashboard:
     needs: [renovate]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     permissions:
+      contents: read
       issues: write
       pull-requests: read
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # PR titles are external text, so they reach jq through a file, not run.
       - name: List open update PRs
         id: list
@@ -270,16 +266,11 @@ jobs:
             echo 'gh workflow run renovate.yml --field log_level=debug'
             echo '```'
           } >"${RUNNER_TEMP}/issue.md"
-          existing="$(gh issue list --state open --limit 100 --json number,title \
-            | jq -r --arg t "${TITLE}" 'map(select(.title == $t)) | if length > 0 then .[0].number else empty end')"
-          if [ -n "${existing}" ]; then
-            gh issue edit "${existing}" --body-file "${RUNNER_TEMP}/issue.md"
-            echo "updated the body of issue #${existing}"
-            exit 0
-          fi
-          url="$(gh issue create --title "${TITLE}" --body-file "${RUNNER_TEMP}/issue.md")"
-          gh issue edit "${url}" --add-label dependencies ||
-            echo "::warning::Could not add the dependencies label. Check whether it still exists (./scripts/sync-repo-config.sh can create it)"
+          ./.github/scripts/upsert-issue.sh \
+            --title "${TITLE}" \
+            --body-file "${RUNNER_TEMP}/issue.md" \
+            --label dependencies \
+            --on-existing edit
 
       - name: Close the issue when there is nothing to update
         if: steps.list.outputs.count == '0'
@@ -289,9 +280,5 @@ jobs:
           TITLE: Dependency updates are available
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          set -eo pipefail
-          numbers="$(gh issue list --state open --limit 100 --json number,title \
-            | jq -r --arg t "${TITLE}" '.[] | select(.title == $t) | .number')"
-          for number in ${numbers}; do
-            gh issue close "${number}" --comment "Closing because there is nothing left to update: ${RUN_URL}"
-          done
+          ./.github/scripts/close-issues-by-title.sh "${TITLE}" \
+            "Closing because there is nothing left to update: ${RUN_URL}"

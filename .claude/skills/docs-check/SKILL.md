@@ -3,7 +3,13 @@ name: docs-check
 description: Review every tracked file against the no-duplication rule in CLAUDE.md — comments vs nearby code and repo docs, docs vs code and easily found references, bilingual pairs — and flag docs and comments that have drifted from what the code actually does. Pass `diff` to review only the files in the current diff.
 disable-model-invocation: true
 argument-hint: "[diff]"
-allowed-tools: Read, Grep, Glob, Bash(git ls-files:*), Bash(git diff:*)
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - Bash(git ls-files:*)
+  - Bash(git diff:*)
+  - Bash(git fetch:*)
 ---
 
 # docs-check
@@ -18,7 +24,11 @@ Full review (default):
 git ls-files
 ```
 
-Diff-only review — when invoked with the `diff` argument, review only the files in the current diff: branch commits not yet on origin/main, staged and unstaged edits, and untracked files.
+Diff-only review — when invoked with the `diff` argument, review only the files in the current diff: branch commits not yet on origin/main, staged and unstaged edits, and untracked files. Fetch first so origin/main is current.
+
+```bash
+git fetch origin main
+```
 
 ```bash
 git diff --name-only origin/main

@@ -11,7 +11,7 @@ setup() {
 # registrations -> "<event> <script name>" for every registered hook command
 registrations() {
   jq -r '.hooks | to_entries[] | .key as $event
-    | .value[].hooks[].command
+    | .value[].hooks[] | select(.type == "command") | .command
     | capture("(?<script>[^/]+\\.sh)").script
     | "\($event) \(.)"' "${SETTINGS_FILE}"
 }

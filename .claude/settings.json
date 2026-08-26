@@ -1,5 +1,6 @@
 {
   "language": "japanese",
+  "autoMemoryEnabled": false,
   "hooks": {
     "PreToolUse": [
       {

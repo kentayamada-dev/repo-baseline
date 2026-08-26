@@ -186,6 +186,7 @@ docker run --rm -v "$PWD:/repo:ro" -w /repo \
 | `prConcurrentLimit: 0` | 更新を必ず PR にして、[更新の一覧の issue](#更新の一覧の-issue) を完全な一覧にする | open が 10 本を超えると以降が保留され、その分が一覧に出ない |
 | `dependencyDashboard: false` | 標準のダッシュボードを止め、一覧を自前の issue にする（[理由](#標準の-dependency-dashboard-を使わない理由)） | `Dependency Dashboard` issue が立ち、自前の issue と二重になる |
 | `pinDigests: true` | タグは差し替え可能なので、ダイジェストまで固定する（[ダイジェストの固定](#ダイジェストの固定)） | タグ指定だけになり、中身の差し替えを追えなくなる |
+| `extends` の `helpers:pinGitHubActionDigestsToSemver` | 固定した SHA に添えるコメントを `# v7.0.1` のような厳密なバージョンに保つ（[ダイジェストの固定](#ダイジェストの固定)） | `# v7` のような可動する major タグが書かれ、上流がタグを付け替えるとコメントが固定した commit を指さなくなり、[`zizmor`](ci-jobs.ja.md#zizmor) が `ref-version-mismatch` として報告する |
 | `packageRules` の `non-major` | major 以外は 1 本の PR にまとめる | 更新ごとに PR が立ち、本数が増える |
 | `commitMessage*` / `pr*` の文面 | 更新 PR のタイトルと本文を自前で書く（[PR の文面](#pr-の文面)） | 自動生成の既定の文面に戻り、自動 issue と体裁が揃わない |
 | `fetchChangeLogs: 'off'` | リリースノートを PR に出さないので取得しない（[本文](#本文)） | 表示しないリリースノートを実行ごとに取りに行く |
@@ -194,9 +195,10 @@ docker run --rm -v "$PWD:/repo:ro" -w /repo \
 
 | 書き方 | 拾う仕組み |
 | --- | --- |
-| `uses: actions/checkout@<sha> # v7` | github-actions マネージャ（自動） |
+| `uses: actions/checkout@<commit sha> # v7.0.1` | github-actions マネージャ（自動） |
+| `uses: <owner>/<repo>/.github/workflows/<name>.yml@<commit sha> # v2.5.1` | 同上（自動） |
 | `uses: docker://<イメージ>:<タグ>@sha256:...` | 同上（自動） |
-| ジョブの `container: image:` | 同上（自動） |
+| ジョブの `container:` — `image: <イメージ>:<タグ>@sha256:...` | 同上（自動） |
 | [mise.toml](../mise.toml) の `[tools]` | mise マネージャ（自動） |
 | `jdx/mise-action` の `version` 入力 | github-actions マネージャ（自動） |
 
@@ -208,17 +210,15 @@ docker run --rm -v "$PWD:/repo:ro" -w /repo \
 
 `pinDigests: true` により、action と Docker イメージはタグに加えてダイジェストまで固定されます。タグは後から中身を差し替えられるため、タグだけの指定では CI が何を実行しているか確定しません。固定しておけば、中身が変わるのは Renovate の PR をマージしたときだけになります。
 
-| 対象 | 書き方 | 更新 |
-| --- | --- | --- |
-| action | `uses: actions/checkout@<commit sha> # v7` | Renovate が SHA と末尾コメントの両方を維持 |
-| `docker://` のイメージ | `uses: docker://<イメージ>:<タグ>@sha256:...` | Renovate がタグとダイジェストの両方を更新 |
-| ジョブの `container:` | `image: <イメージ>:<タグ>@sha256:...` | 同上 |
-| 再利用可能ワークフロー | `uses: <owner>/<repo>/.github/workflows/<name>.yml@<commit sha> # v<タグ>` | action と同じ |
+| 対象 | 更新 |
+| --- | --- |
+| action、再利用可能ワークフロー | Renovate が SHA と末尾コメントの両方を維持 |
+| `docker://` のイメージ、ジョブの `container:` | Renovate がタグとダイジェストの両方を更新 |
 
-ジョブを追加するときも同じ形で書いてください。最初の 1 回もダイジェストを手で付ける必要はありません（Renovate が固定します）。手で付けるときは次のように取得します。
+ジョブを追加するときも同じ形（[何が更新対象になるか](#何が更新対象になるか)）で書いてください。最初の 1 回もダイジェストを手で付ける必要はありません（Renovate が固定します）。手で付けるときは次のように取得します。
 
 ```bash
-gh api repos/actions/checkout/commits/v7 --jq .sha    # action の commit SHA
+gh api repos/actions/checkout/commits/v7.0.1 --jq .sha    # action の commit SHA
 docker buildx imagetools inspect <イメージ>:<タグ> --format '{{.Manifest.Digest}}'
 ```
 

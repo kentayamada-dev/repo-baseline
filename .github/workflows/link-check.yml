@@ -62,12 +62,6 @@ jobs:
           WORKFLOW_FILE_URL: ${{ github.server_url }}/${{ github.repository }}/blob/main/.github/workflows/link-check.yml
         run: |
           set -eo pipefail
-          existing="$(gh issue list --state open --limit 100 --json number,title \
-            | jq -r --arg t "${TITLE}" 'map(select(.title == $t)) | if length > 0 then .[0].number else empty end')"
-          if [ -n "${existing}" ]; then
-            echo "issue #${existing} already exists, not creating another"
-            exit 0
-          fi
           {
             echo "The [\`link-check\`](${WORKFLOW_URL}) check failed."
             echo
@@ -88,9 +82,11 @@ jobs:
             echo
             echo "Once fixed, this issue closes automatically on the next run."
           } >"${RUNNER_TEMP}/issue.md"
-          url="$(gh issue create --title "${TITLE}" --body-file "${RUNNER_TEMP}/issue.md")"
-          gh issue edit "${url}" --add-label maintenance ||
-            echo "::warning::Could not add the maintenance label. Check whether it still exists (./scripts/sync-repo-config.sh can create it)"
+          ./.github/scripts/upsert-issue.sh \
+            --title "${TITLE}" \
+            --body-file "${RUNNER_TEMP}/issue.md" \
+            --label maintenance \
+            --on-existing skip
 
       - name: Close the issue when the links are fixed
         env:
@@ -98,9 +94,5 @@ jobs:
           TITLE: External links are broken
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          set -eo pipefail
-          numbers="$(gh issue list --state open --limit 100 --json number,title \
-            | jq -r --arg t "${TITLE}" '.[] | select(.title == $t) | .number')"
-          for number in ${numbers}; do
-            gh issue close "${number}" --comment "Closing because the check passed: ${RUN_URL}"
-          done
+          ./.github/scripts/close-issues-by-title.sh "${TITLE}" \
+            "Closing because the check passed: ${RUN_URL}"

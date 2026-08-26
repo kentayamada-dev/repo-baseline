@@ -48,8 +48,6 @@ jobs:
           DOC_URL: ${{ github.server_url }}/${{ github.repository }}/blob/main/docs/drift-check.md
         run: |
           set -eo pipefail
-          existing="$(gh issue list --state open --limit 100 --json number,title \
-            | jq -r --arg t "${TITLE}" 'map(select(.title == $t)) | if length > 0 then .[0].number else empty end')"
           {
             echo "Run log: ${RUN_URL}"
             echo
@@ -57,17 +55,13 @@ jobs:
             cat "${RUNNER_TEMP}/check.log"
             echo '```'
           } >"${RUNNER_TEMP}/log.md"
-          if [ -n "${existing}" ]; then
-            # Not a new issue: the same one would pile up daily.
-            {
-              echo "The [\`repo-settings\`](${WORKFLOW_URL}) check failed again."
-              echo
-              cat "${RUNNER_TEMP}/log.md"
-            } >"${RUNNER_TEMP}/comment.md"
-            gh issue comment "${existing}" --body-file "${RUNNER_TEMP}/comment.md"
-            echo "issue #${existing} already exists, added the latest log as a comment"
-            exit 0
-          fi
+          # What goes on an issue that is already open: the same one would pile up daily,
+          # and only the latest check output is news on it.
+          {
+            echo "The [\`repo-settings\`](${WORKFLOW_URL}) check failed again."
+            echo
+            cat "${RUNNER_TEMP}/log.md"
+          } >"${RUNNER_TEMP}/comment.md"
           {
             echo "The [\`repo-settings\`](${WORKFLOW_URL}) check failed."
             echo
@@ -83,9 +77,12 @@ jobs:
             echo
             echo "Once fixed, this issue closes automatically on the next run."
           } >"${RUNNER_TEMP}/issue.md"
-          url="$(gh issue create --title "${TITLE}" --body-file "${RUNNER_TEMP}/issue.md")"
-          gh issue edit "${url}" --add-label maintenance ||
-            echo "::warning::Could not add the maintenance label. Check whether it still exists (./scripts/sync-repo-config.sh can create it)"
+          ./.github/scripts/upsert-issue.sh \
+            --title "${TITLE}" \
+            --body-file "${RUNNER_TEMP}/issue.md" \
+            --comment-file "${RUNNER_TEMP}/comment.md" \
+            --label maintenance \
+            --on-existing comment
 
       - name: Close the issue when the drift is gone
         env:
@@ -93,9 +90,5 @@ jobs:
           TITLE: Repository settings have drifted
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          set -eo pipefail
-          numbers="$(gh issue list --state open --limit 100 --json number,title \
-            | jq -r --arg t "${TITLE}" '.[] | select(.title == $t) | .number')"
-          for number in ${numbers}; do
-            gh issue close "${number}" --comment "Closing because the check passed: ${RUN_URL}"
-          done
+          ./.github/scripts/close-issues-by-title.sh "${TITLE}" \
+            "Closing because the check passed: ${RUN_URL}"

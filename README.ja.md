@@ -34,6 +34,8 @@
 | [.github/workflows/repo-settings.yml](.github/workflows/repo-settings.yml) | リポジトリ設定と ruleset のずれの定期検査（毎日 / [設定のずれの検査](docs/drift-check.ja.md#設定のずれの検査)） |
 | [.github/workflows/link-check.yml](.github/workflows/link-check.yml) | ドキュメントの外部リンクの定期検査（毎日 / [外部リンクの定期検査](docs/ci-jobs.ja.md#外部リンクの定期検査)） |
 | [.github/workflows/renovate.yml](.github/workflows/renovate.yml) | Renovate の実行（[更新の一覧の issue](docs/renovate.ja.md#更新の一覧の-issue)） |
+| [.github/scripts/](.github/scripts) | 上記の定期実行ワークフローが、落ちた検査を issue として報告し、取り下げるために呼ぶスクリプト |
+| [.github/scripts/tests/](.github/scripts/tests) | 上記スクリプトのテスト。CI で実行される（[script-tests](docs/ci-jobs.ja.md#script-tests)） |
 | [.github/renovate.json5](.github/renovate.json5) | Renovate の設定 |
 | [.github/pull_request_template.md](.github/pull_request_template.md) | PR の本文テンプレート |
 | [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE) | issue のテンプレート（Bug report / Task） |
@@ -211,7 +213,7 @@ git ls-files -z '*.sh' '*.bash' \
 shfmt の注意点:
 
 - **フラグを 1 つでも渡すと shfmt は `.editorconfig` を読みません。** シェルスクリプトの書式はこの指定だけで決まります。redirect の前後に空白を入れる `-sr` などは既存の書き方に合わせて付けていません。変えるならこのフラグに足します。
-- **`;` で区切って 1 行に並べた複数の文は、行に分けて書き直されます。** `cmd || { echo "..." >&2; exit 1; }` のような 1 行ガードも展開されます。無効にするフラグは無いので、`scripts/` 配下はこの形に揃えてあります。
+- **`;` で区切って 1 行に並べた複数の文は、行に分けて書き直されます。** `cmd || { echo "..." >&2; exit 1; }` のような 1 行ガードも展開されます。無効にするフラグは無いので、リポジトリ内のシェルスクリプトはこの形に揃えてあります。
 
 editorconfig-checker と shfmt は、他の検査ツールと同じく本体を mise で入れて実行しています（[ツールの導入と検証](docs/ci-jobs.ja.md#ツールの導入と検証)、バージョンは [mise.toml](mise.toml)）。**editorconfig-checker のコマンド名は `ec` です**（[mise.toml](mise.toml) に書く `editorconfig-checker` は [aqua](https://aquaproj.github.io/) レジストリでのパッケージ名で、バイナリの名前とは違います）。
 
@@ -260,12 +262,12 @@ git ls-files -z '.github/ISSUE_TEMPLATE/config.yml' '.github/ISSUE_TEMPLATE/conf
 | --- | --- | --- |
 | `bug` | Bug report issue | [bug_report.yml](.github/ISSUE_TEMPLATE/bug_report.yml) の `labels` |
 | `enhancement` | Task issue | [task.yml](.github/ISSUE_TEMPLATE/task.yml) の `labels` |
-| `dependencies` | Renovate の更新 PR / 更新の一覧 issue | [renovate.json5](.github/renovate.json5) の `labels` / [renovate.yml](.github/workflows/renovate.yml) の `gh issue edit --add-label` |
-| `maintenance` | 定期検査の失敗で立つ通知 issue | 各ワークフローの `gh issue edit --add-label` |
+| `dependencies` | Renovate の更新 PR / 更新の一覧 issue | [renovate.json5](.github/renovate.json5) の `labels` / [renovate.yml](.github/workflows/renovate.yml) の `--label dependencies` |
+| `maintenance` | 定期検査の失敗で立つ通知 issue | 各ワークフローの `--label maintenance` |
 
 `maintenance` は、人が報告したバグと自動検査が見つけた保守作業を一覧で分けるためのラベルです。「誰が作ったか」ではなく内容の種類を表します（通知 issue は `author:app/github-actions` で絞れます）。
 
-通知 issue へのラベル付けを `gh issue create` の `--label` ではなく作成後の `gh issue edit --add-label` で行うのは、ラベルが消えていると `gh` がエラーで終わるためです。`create` に渡すと issue そのものが立たず、失敗の通知手段を失います。付けられなかったときは警告だけを出して本体の通知は残します。
+通知 issue へのラベル付けは [upsert-issue.sh](.github/scripts/upsert-issue.sh) が行います。作成時ではなく作成後に付ける理由と、ラベルが消えていても警告で済む理由は、スクリプトの `--help` に書いてあります。
 
 ラベルが消されていないかは[設定のずれの検査](docs/drift-check.ja.md#設定のずれの検査)が毎日確かめます（issue テンプレートの側は、存在しないラベルを GitHub が黙って無視するため、消えても気づけません）。テンプレートや `renovate.json5` の `labels` を変えるときは、スクリプトの `LABELS_EXPECTED` も合わせて直してください（検査が見るのはスクリプト側の定義だけです）。
 

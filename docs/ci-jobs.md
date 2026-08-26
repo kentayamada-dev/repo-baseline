@@ -20,6 +20,7 @@ The list of check jobs present in [ci.yml](../.github/workflows/ci.yml) in the i
 | `gitleaks` | Secrets that crept into the commit history | [gitleaks](#gitleaks) |
 | `setup-script` | That the run-once scripts actually run | [setup-script](#setup-script) |
 | `hooks` | That the Claude Code hooks still allow and refuse what CLAUDE.md says | [hooks](#hooks) |
+| `script-tests` | That the scripts the workflows call still decide the same way | [script-tests](#script-tests) |
 | `issue-forms` | Whether the issue forms follow the schema | [Issue templates](../README.md#issue-templates) |
 | `renovate-config` | Validation of the Renovate configuration | [Validating the configuration](renovate.md#validating-the-configuration) |
 | `osv-scanner-diff` | Vulnerabilities in dependencies the PR newly introduces | [osv-scanner](#osv-scanner) |
@@ -319,6 +320,23 @@ The wiring is tested too, because a hook is only ever reached through [.claude/s
 The tests for the branch rule create a throwaway repository under the bats temporary directory, so their verdict never depends on the branch the runner happens to be on. `jq` ships with GitHub-hosted runners and is what the hooks themselves call, so bats is the only addition to [mise.toml](../mise.toml).
 
 The tests live under `.claude/` rather than in a `tests/` directory of their own, so that [cleanup-template.sh](../scripts/cleanup-template.sh) takes them out with the hooks they exercise, and so that the repository built from the template keeps the obvious place for its own tests free. `-r` is what keeps this job green afterwards: with no `.bats` file left, bats is never started. Delete the job along with the rest of the leftovers.
+
+## script-tests
+
+The `script-tests` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in [.github/scripts/tests/](../.github/scripts/tests) against the scripts in the directory above them, [.github/scripts/](../.github/scripts) — the two the scheduled workflows call to report a failing check as an issue and to retract it once the check passes.
+
+```bash
+git ls-files -z '.github/scripts/tests/*.bats' \
+  | xargs -0 -r bats --print-output-on-failure
+```
+
+The tests replace `gh` with a stub ([helper.bash](../.github/scripts/tests/helper.bash) explains how), so nothing reaches GitHub and no token is needed — which is what makes the decisions around those calls testable at all: which issue counts as the same issue (the title, in full and literally), what becomes of one that is already open (left alone, commented on, or rewritten — one per calling workflow), and that a label deleted since costs a warning rather than the issue.
+
+Being reachable by a test is the reason this logic sits in `.github/scripts/` rather than inline in the workflows. A `run:` block can only be exercised by triggering the workflow around it, and for these that means waiting for a scheduled check to fail.
+
+As with [hooks](#hooks), bats is the only addition to [mise.toml](../mise.toml). [shellcheck](#shellcheck) and [format](../README.md#consistent-formatting) pick the scripts up without being told, because both walk `git ls-files` over `*.sh`.
+
+Unlike the [hooks](#hooks) tests, these stay behind [cleanup-template.sh](../scripts/cleanup-template.sh): the workflows that call the scripts stay, so the scripts and their tests do too.
 
 ## osv-scanner
 

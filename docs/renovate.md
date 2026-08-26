@@ -188,6 +188,7 @@ These are the points where [renovate.json5](../.github/renovate.json5) differs f
 | `prConcurrentLimit: 0` | Every update becomes a PR, so that [The update list issue](#the-update-list-issue) is a complete list | Once more than 10 are open the rest are held back and do not appear in the list |
 | `dependencyDashboard: false` | Turns off the built-in dashboard and uses a hand-rolled issue for the list ([why](#why-the-built-in-dependency-dashboard-is-not-used)) | A `Dependency Dashboard` issue is opened, duplicating the hand-rolled one |
 | `pinDigests: true` | Tags can be re-pointed, so pin all the way to the digest ([Pinning digests](#pinning-digests)) | Only the tag is specified, and a swap of the contents can no longer be tracked |
+| `helpers:pinGitHubActionDigestsToSemver` in `extends` | Keeps the comment beside a pinned SHA at an exact version such as `# v7.0.1` ([Pinning digests](#pinning-digests)) | A moving major tag such as `# v7` is written, and once upstream re-points it the comment no longer names the pinned commit, which [`zizmor`](ci-jobs.md#zizmor) reports as `ref-version-mismatch` |
 | `non-major` in `packageRules` | Groups everything except major into a single PR | A PR is opened per update and the count grows |
 | The `commitMessage*` / `pr*` wording | Writes the title and body of update PRs by hand ([PR wording](#pr-wording)) | It reverts to the generated default wording, which does not match the automated issues |
 | `fetchChangeLogs: 'off'` | Release notes are not shown in the PR, so they are not fetched ([Body](#body)) | Release notes that are never displayed are fetched on every run |
@@ -196,9 +197,10 @@ These are the points where [renovate.json5](../.github/renovate.json5) differs f
 
 | How it is written | How it is picked up |
 | --- | --- |
-| `uses: actions/checkout@<sha> # v7` | The github-actions manager (automatic) |
+| `uses: actions/checkout@<commit sha> # v7.0.1` | The github-actions manager (automatic) |
+| `uses: <owner>/<repo>/.github/workflows/<name>.yml@<commit sha> # v2.5.1` | Same as above (automatic) |
 | `uses: docker://<image>:<tag>@sha256:...` | Same as above (automatic) |
-| A job's `container: image:` | Same as above (automatic) |
+| A job's `container:` — `image: <image>:<tag>@sha256:...` | Same as above (automatic) |
 | `[tools]` in [mise.toml](../mise.toml) | The mise manager (automatic) |
 | The `version` input of `jdx/mise-action` | The github-actions manager (automatic) |
 
@@ -210,17 +212,15 @@ Files such as `package.json` and `go.mod` added along with application code are 
 
 With `pinDigests: true`, actions and Docker images are pinned to a digest in addition to a tag. Because the contents behind a tag can be swapped later, a tag alone does not determine what CI actually runs. With the digest pinned, the contents change only when a Renovate PR is merged.
 
-| Target | How it is written | Update |
-| --- | --- | --- |
-| An action | `uses: actions/checkout@<commit sha> # v7` | Renovate maintains both the SHA and the trailing comment |
-| A `docker://` image | `uses: docker://<image>:<tag>@sha256:...` | Renovate updates both the tag and the digest |
-| A job's `container:` | `image: <image>:<tag>@sha256:...` | Same as above |
-| A reusable workflow | `uses: <owner>/<repo>/.github/workflows/<name>.yml@<commit sha> # v<tag>` | Same as an action |
+| Target | Update |
+| --- | --- |
+| An action, a reusable workflow | Renovate maintains both the SHA and the trailing comment |
+| A `docker://` image, a job's `container:` | Renovate updates both the tag and the digest |
 
-Write new jobs in the same form. The digest does not have to be added by hand even the first time (Renovate pins it). To add it by hand, fetch it like this:
+Write new jobs in the same form ([What gets updated](#what-gets-updated)). The digest does not have to be added by hand even the first time (Renovate pins it). To add it by hand, fetch it like this:
 
 ```bash
-gh api repos/actions/checkout/commits/v7 --jq .sha    # the action's commit SHA
+gh api repos/actions/checkout/commits/v7.0.1 --jq .sha    # the action's commit SHA
 docker buildx imagetools inspect <image>:<tag> --format '{{.Manifest.Digest}}'
 ```
 

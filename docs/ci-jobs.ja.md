@@ -41,7 +41,7 @@ jobs:
     needs: [lint, test]   # ここに足す
 ```
 
-`needs` への足し忘れは `ci` ジョブ自身が検査します（ci.yml のジョブ一覧と `needs` を突き合わせます）。`needs` に無いジョブは走っても必須チェックに入らず、失敗してもマージできてしまうため、足し忘れた PR 自体を落とします。
+`needs` への足し忘れは `ci` ジョブ自身が検査し（ci.yml のジョブ一覧と `needs` を突き合わせます）、足し忘れた PR 自体を落とします。なぜ危険かはエラーメッセージが説明します。
 
 なお `ci` は `skipped` のジョブを成功として扱います。ジョブ側の `if` でスキップしても PR は止まりませんが、裏返しに、`if` でのスキップは前回の失敗を緑で上書きし得ます。
 
@@ -75,9 +75,10 @@ lockfile（`package-lock.json` や `go.mod` など）は、置いた時点で os
 | ツール | 検証 |
 | --- | --- |
 | ghalint | SLSA provenance（リリースワークフローが署名した証明）とチェックサム |
-| hadolint / zizmor | GitHub Artifact Attestations（リリースに付く署名付きの証明）とチェックサム |
-| gitleaks | チェックサムのみ（リリースに provenance も attestations も付かない） |
-| typos | なし（リリースにチェックサムも署名も付かない。固定できるのはバージョンだけ） |
+| actionlint / hadolint / zizmor | GitHub Artifact Attestations（リリースに付く署名付きの証明）とチェックサム |
+| editorconfig-checker / gitleaks | チェックサムのみ（リリースに provenance も attestations も付かない） |
+| shellcheck / shfmt / typos | なし（リリースにチェックサムも署名も付かない。固定できるのはバージョンだけ） |
+| bats | なし（タグから GitHub が生成するソースアーカイブを導入する。リリースにアセットが無く、バージョン以外に固定するものが無い） |
 | lychee | なし（リリースに `.sha256` は付くが、aqua レジストリ側に設定が無く検証が走らない） |
 | check-jsonschema | PyPI が返すファイルのハッシュのみ（aqua を経由しない。下記） |
 
@@ -330,7 +331,7 @@ git ls-files -z '.github/scripts/tests/*.bats' \
   | xargs -0 -r bats --print-output-on-failure
 ```
 
-テストは `gh` をスタブに差し替えるので（仕組みは [helper.bash](../.github/scripts/tests/helper.bash) にあります）、GitHub には何も届かずトークンも要りません。だからこそ、その呼び出しの周りにある判断をそもそも検査できます。どの issue を同じ issue とみなすか（タイトルの完全一致、しかも文字どおり）、すでに開いている issue をどうするか（放置・コメント追記・本文の差し替えの 3 通りで、呼ぶワークフローごとに違う）、消えたラベルは issue ではなく警告で済ませること、です。
+テストは `gh` をスタブに差し替えるので（仕組みは [helper.bash](../.github/scripts/tests/helper.bash) にあります）、GitHub には何も届かずトークンも要りません。だからこそ、その呼び出しの周りにある判断（各スクリプトの `--help` が説明している内容）をそもそも検査できます。
 
 このロジックをワークフローに直接書かず `.github/scripts/` に置いてあるのは、テストから触れるようにするためです。`run:` の中身は囲んでいるワークフローを起動しないと動かせず、この 2 つの場合それは定期実行の検査が落ちるのを待つことを意味します。
 

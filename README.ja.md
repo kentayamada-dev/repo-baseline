@@ -70,7 +70,7 @@
 2. **スクリプトが書き換えた [config.yml](.github/ISSUE_TEMPLATE/config.yml) をコミットする**（[issue のテンプレート](#issue-のテンプレート)）
 3. **secret `SETTINGS_TOKEN` を登録する**（[作成手順](docs/drift-check.ja.md#settings_token-の作成)） — 未登録だと[設定のずれの検査](docs/drift-check.ja.md#設定のずれの検査)が `UNKNOWN` で落ちて issue が立ちます
 4. **[Renovate](docs/renovate.ja.md#renovate) を使うなら secret `RENOVATE_TOKEN` を登録する**（[作成手順](docs/renovate.ja.md#トークンの登録)） — 未登録だと月曜の定期実行が落ちて issue が立ちます
-5. **テンプレートに属するファイルを削除する**（[テンプレート自身のファイルを削除する](#テンプレート自身のファイルを削除する)） — ドキュメント、Claude Code の設定、コミュニティ文書はいずれもこのテンプレートについての記述であって、あなたのリポジトリのものではありません
+5. **テンプレートに属するファイルを削除する**（[テンプレート自身のファイルを削除する](#テンプレート自身のファイルを削除する)）
 
 前提: [gh](https://cli.github.com/) と [jq](https://jqlang.github.io/jq/)、および `gh auth login` 済みであること。
 

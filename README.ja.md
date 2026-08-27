@@ -2,7 +2,7 @@
 
 [English](README.md) | **日本語**
 
-[![ci](https://github.com/kentayamada-dev/repo-baseline/actions/workflows/ci.yml/badge.svg)](https://github.com/kentayamada-dev/repo-baseline/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/kentayamada-dev/repo-baseline/badge)](https://scorecard.dev/viewer/?uri=github.com/kentayamada-dev/repo-baseline)
+[![ci](https://github.com/kentayamada-dev/repo-baseline/actions/workflows/ci.yml/badge.svg)](https://github.com/kentayamada-dev/repo-baseline/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.scorecard.dev%2Fprojects%2Fgithub.com%2Fkentayamada-dev%2Frepo-baseline&query=%24.score&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/kentayamada-dev/repo-baseline)
 
 リポジトリ運用の土台（ブランチ保護と、拡張前提の CI ワークフロー）を収めたテンプレートリポジトリ。
 

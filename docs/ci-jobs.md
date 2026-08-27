@@ -41,7 +41,7 @@ jobs:
     needs: [lint, test]   # add it here
 ```
 
-Forgetting to add it to `needs` is checked by the `ci` job itself (it compares the job list in ci.yml against `needs`). A job that is not in `needs` runs but does not count as a required check, so the PR could still be merged even if that job fails; instead, the PR that forgot to add it is failed.
+Forgetting to add it to `needs` is checked by the `ci` job itself (it compares the job list in ci.yml against `needs`) and fails the PR that forgot; the error message explains the risk.
 
 Note that `ci` treats `skipped` jobs as successes. Skipping with a job-level `if` does not block the PR, but the flip side is that such a skip can paint a previous failure green.
 
@@ -75,9 +75,10 @@ mise resolves the download source from the [aqua](https://aquaproj.github.io/) r
 | Tool | Verification |
 | --- | --- |
 | ghalint | SLSA provenance (an attestation signed by the release workflow) and checksums |
-| hadolint / zizmor | GitHub Artifact Attestations (a signed attestation attached to the release) and checksums |
-| gitleaks | Checksums only (the release carries neither provenance nor attestations) |
-| typos | None (the release carries neither checksums nor signatures; all that can be pinned is the version) |
+| actionlint / hadolint / zizmor | GitHub Artifact Attestations (a signed attestation attached to the release) and checksums |
+| editorconfig-checker / gitleaks | Checksums only (the release carries neither provenance nor attestations) |
+| shellcheck / shfmt / typos | None (the release carries neither checksums nor signatures; all that can be pinned is the version) |
+| bats | None (what is installed is the source archive GitHub generates from the tag; the release carries no assets, so nothing beyond the version pins it) |
 | lychee | None (the release does carry a `.sha256`, but the aqua registry has no configuration for it so no verification runs) |
 | check-jsonschema | Only the file hash PyPI returns (it does not go through aqua; see below) |
 
@@ -330,7 +331,7 @@ git ls-files -z '.github/scripts/tests/*.bats' \
   | xargs -0 -r bats --print-output-on-failure
 ```
 
-The tests replace `gh` with a stub ([helper.bash](../.github/scripts/tests/helper.bash) explains how), so nothing reaches GitHub and no token is needed — which is what makes the decisions around those calls testable at all: which issue counts as the same issue (the title, in full and literally), what becomes of one that is already open (left alone, commented on, or rewritten — one per calling workflow), and that a label deleted since costs a warning rather than the issue.
+The tests replace `gh` with a stub ([helper.bash](../.github/scripts/tests/helper.bash) explains how), so nothing reaches GitHub and no token is needed — which is what makes the decisions around those calls (the ones each script's `--help` describes) testable at all.
 
 Being reachable by a test is the reason this logic sits in `.github/scripts/` rather than inline in the workflows. A `run:` block can only be exercised by triggering the workflow around it, and for these that means waiting for a scheduled check to fail.
 

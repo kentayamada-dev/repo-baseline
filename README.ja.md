@@ -121,7 +121,7 @@ gh api --method DELETE repos/OWNER/REPO/branches/main/protection
 | 履歴 | 一直線を強制（merge commit 不可） |
 | main の削除 / force-push | 禁止 |
 
-ruleset は [main.json](.github/rulesets/main.json) の 1 つで、対象は `main` だけです。main 以外のブランチには何も掛からず、管理者にも例外（bypass）を与えていません。設定を変えるときは JSON を編集してスクリプトを再実行してください（`.github/rulesets/*.json` がすべて適用され、同名 ruleset があれば更新されます）。
+ruleset は [main.json](.github/rulesets/main.json) の 1 つで、対象は `main` だけです。main 以外のブランチには何も掛からず、管理者にも例外（bypass）を与えていません。設定を変えるときは JSON を編集してスクリプトを再実行してください。
 
 コミットの署名は必須にしていません。ルールが見るのはマージ時に GitHub が作って署名する squash コミットだけでなく PR に含まれるすべてのコミットなので、必須にすると未署名のコミットで作られる Renovate の更新 PR がマージできなくなるためです。
 

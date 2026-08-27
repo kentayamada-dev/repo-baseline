@@ -1,10 +1,7 @@
 #!/usr/bin/env bats
 
-# The Conventional Commits type list is written out in places no tool derives
-# from one another: the PATTERN the pr-title job enforces, the failure message
-# next to it, the tables in both READMEs, and the prompt hook in
-# .claude/settings.json. These tests pin every copy to the PATTERN, so a list
-# that was not fixed together with it fails here (docs/ci-jobs.md#hooks).
+# Pins every copy of the Conventional Commits type list to the PATTERN the
+# pr-title job enforces (docs/ci-jobs.md#hooks).
 #
 # Each extractor is anchored to the current wording of its source. When a
 # rewording empties one, the comparison against the non-empty PATTERN list

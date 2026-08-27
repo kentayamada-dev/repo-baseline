@@ -296,9 +296,8 @@ Detection uses the 200-plus rules built into the tool (per-provider regular expr
 
 It scans the entire history. `gitleaks git` uses `git log -p` internally, so `fetch-depth: 0` is added to `actions/checkout` to avoid a shallow clone (at the default depth of 1, a value in an older commit would be missed).
 
-```yaml
-      - name: Scan git history for secrets
-        run: gitleaks git --redact --verbose --no-banner
+```bash
+gitleaks git --redact --verbose --no-banner
 ```
 
 `--redact` keeps the detected value itself out of the log. Run logs are public on a public repository, so without it the check itself would become a leak path. `--verbose` prints where it was found (commit / file / line / rule ID / fingerprint).

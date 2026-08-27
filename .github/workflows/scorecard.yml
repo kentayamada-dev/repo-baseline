@@ -22,9 +22,8 @@ permissions:
 jobs:
   analysis:
     # The Scorecard API rejects published results unless this job stays within its
-    # restrictions — steps limited to an approved list of actions, no job-level env,
-    # containers, or services (see "Scorecard" in docs/ci-jobs.md). Put anything
-    # extra in a separate job, like notify below.
+    # restrictions (see "Scorecard" in docs/ci-jobs.md) — adding a step here breaks
+    # publishing. Put anything extra in a separate job, like notify below.
     #
     # scorecard-action is a docker (linux/amd64) action, so use an x64 runner.
     runs-on: ubuntu-24.04

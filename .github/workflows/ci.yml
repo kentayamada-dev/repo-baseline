@@ -88,9 +88,8 @@ jobs:
           cache_save: ${{ github.event_name == 'push' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      # The check commands are mise tasks (mise.toml), shared with local runs.
-      # --skip-tools keeps mise from installing every tool in mise.toml; the
-      # job's mise-action step already installed the ones its task needs.
+      # The check commands are mise tasks shared with local runs
+      # (docs/ci-jobs.md#reproducing-the-checks-locally).
       - name: Check formatting
         run: mise run --skip-tools check:format
 

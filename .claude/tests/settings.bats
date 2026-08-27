@@ -1,8 +1,7 @@
 #!/usr/bin/env bats
 
-# A hook is only ever reached through .claude/settings.json, so a renamed
-# script, or one registered under an event it does not answer for, would leave
-# every other test in this directory green while nothing runs any more.
+# A hook is only ever reached through .claude/settings.json, so these tests
+# pin the wiring (docs/ci-jobs.md#hooks).
 setup() {
   load helper
   SETTINGS_FILE="${BATS_TEST_DIRNAME}/../settings.json"

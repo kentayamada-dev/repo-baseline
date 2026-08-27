@@ -25,7 +25,7 @@ The list of check jobs present in [ci.yml](../.github/workflows/ci.yml) in the i
 | `renovate-config` | Validation of the Renovate configuration | [Validating the configuration](renovate.md#validating-the-configuration) |
 | `osv-scanner-diff` | Vulnerabilities in dependencies the PR newly introduces | [osv-scanner](#osv-scanner) |
 
-Checks whose result can change without any code change (the [settings drift check](drift-check.md#settings-drift-check), the full scan in [osv-scanner](#osv-scanner), the [external link check](#scheduled-external-link-checks)) would stop unrelated PRs if they were part of `ci`, so they are scheduled runs in separate workflows.
+Checks whose result can change without any code change (the [settings drift check](drift-check.md#settings-drift-check), the full scan in [osv-scanner](#osv-scanner), the [external link check](#scheduled-external-link-checks), [Scorecard](#scorecard)) would stop unrelated PRs if they were part of `ci`, so they are scheduled runs in separate workflows.
 
 ## Adding a job to CI
 
@@ -48,6 +48,7 @@ Note that `ci` treats `skipped` jobs as successes. Skipping with a job-level `if
 Things to note:
 
 - Always write `permissions` and `timeout-minutes` on a job, and add `persist-credentials: false` to `actions/checkout`. [`ghalint`](#ghalint) enforces this. The exception is a job that calls a reusable workflow with `uses`, where `timeout-minutes` cannot be written ([`osv-scanner-diff`](#osv-scanner) is one).
+- Where possible, put the job's command in a `check:<job>` task in [mise.toml](../mise.toml) and have the job run that, so the check stays reproducible locally ([Reproducing the checks locally](#reproducing-the-checks-locally)).
 - Do not add a `paths` filter to the whole workflow. On an out-of-scope PR, `ci` is never reported and the PR stays unmergeable, waiting for the required check. To narrow the scope, use a job-level `if`.
 - When renaming the `ci` job, change `context` in [main.json](../.github/rulesets/main.json) to match.
 - **Do not make CI report from anything other than GitHub Actions.** Alongside `context`, `integration_id` (GitHub Actions' App ID) is specified, and a check of the same name reported by another App or token is ignored. When migrating to an external CI, this value has to change to the new App ID as well, or the PR gets stuck waiting for the required check ([how to check](troubleshooting.md#troubleshooting)).
@@ -87,6 +88,19 @@ mise resolves the download source from the [aqua](https://aquaproj.github.io/) r
 The version of mise itself is pinned with the `version` input of [mise-action](https://github.com/jdx/mise-action) (Renovate reads that input out of the box). The action itself is pinned to a commit SHA like the others. There is no `mise.lock` (see the comment in [mise.toml](../mise.toml) for why).
 
 Cache writes are limited to pushes to main with `cache_save: ${{ github.event_name == 'push' }}`. Caches are branch-scoped, and one saved on a PR branch lingers for seven days after the merge without anyone using it. The cache on main is readable from every branch, so PRs that do not touch [mise.toml](../mise.toml) still hit it and lose no speed.
+
+### Reproducing the checks locally
+
+The commands the check jobs run are defined once, as tasks in [mise.toml](../mise.toml) named after the jobs, and each job's `run:` step calls its task with `mise run --skip-tools check:<job>` (the flag keeps mise from installing every tool in mise.toml — the job's mise-action step already installed what its task needs). The same tasks reproduce CI at your desk, with [mise](https://mise.jdx.dev/) as the only prerequisite:
+
+```bash
+mise run check              # every check that works from a local checkout
+mise run check:shellcheck   # one job's check
+```
+
+The first run installs the pinned tools; the results match CI because both sides read the same commands and versions from the same file. Two caveats: [zizmor](#zizmor) runs offline without a `GITHUB_TOKEN` in the environment, so its online audits are skipped with a warning, and [gitleaks](#gitleaks) needs the full history a shallow clone does not have.
+
+The jobs with no task are those that cannot run from a local checkout alone: [CodeQL](#codeql) and `pr-title` need the GitHub side, [setup-script](#setup-script) needs a token and the API, and [markdownlint-cli2](#markdownlint-cli2), [renovate-config](renovate.md#validating-the-configuration), and [osv-scanner](#osv-scanner) are the three exceptions above that do not run through mise.
 
 ## CodeQL
 
@@ -324,20 +338,20 @@ The tests live under `.claude/` rather than in a `tests/` directory of their own
 
 ## script-tests
 
-The `script-tests` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in two directories, each against the scripts next to them. [.github/scripts/tests/](../.github/scripts/tests) covers [.github/scripts/](../.github/scripts) — the two the scheduled workflows call to report a failing check as an issue and to retract it once the check passes. [scripts/tests/](../scripts/tests) covers [sync-repo-config.sh](../scripts/sync-repo-config.sh) — the script whose OK / DRIFT / UNKNOWN verdicts the [settings drift check](drift-check.md#settings-drift-check) relies on.
+The `script-tests` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in two directories, each against the scripts next to them. [.github/scripts/tests/](../.github/scripts/tests) covers [.github/scripts/](../.github/scripts) — the two the scheduled workflows call to report a failing check as an issue and to retract it once the check passes. [scripts/tests/](../scripts/tests) covers the two scripts in [scripts/](../scripts): [sync-repo-config.sh](../scripts/sync-repo-config.sh) — the script whose OK / DRIFT / UNKNOWN verdicts the [settings drift check](drift-check.md#settings-drift-check) relies on — and [cleanup-template.sh](../scripts/cleanup-template.sh), which deletes files and runs once.
 
 ```bash
 git ls-files -z '.github/scripts/tests/*.bats' 'scripts/tests/*.bats' \
   | xargs -0 -r bats --print-output-on-failure
 ```
 
-The tests replace `gh` with a stub (the `helper.bash` next to each `.bats` file explains how), so nothing reaches GitHub and no token is needed — which is what makes the decisions around those calls (the ones each script's `--help` describes) testable at all. For sync-repo-config.sh that is also what [setup-script](#setup-script) cannot reach: a dry run stops before any verdict or write, so the OK / DRIFT / UNKNOWN classification of `--check` and the apply path are only exercised here.
+The tests around scripts that call GitHub replace `gh` with a stub (the `helper.bash` next to them explains how), so nothing reaches GitHub and no token is needed — which is what makes the decisions around those calls (the ones each script's `--help` describes) testable at all. cleanup-template.sh calls no API; its tests run it against a throwaway git repository instead. Either way this job reaches what [setup-script](#setup-script) cannot: a dry run stops before any verdict or write, so the OK / DRIFT / UNKNOWN classification of `--check`, the apply path, and the deletions themselves are only exercised here.
 
 Being reachable by a test is the reason this logic sits in `.github/scripts/` rather than inline in the workflows. A `run:` block can only be exercised by triggering the workflow around it, and for these that means waiting for a scheduled check to fail.
 
 As with [hooks](#hooks), bats is the only addition to [mise.toml](../mise.toml). [shellcheck](#shellcheck) and [format](../README.md#consistent-formatting) pick the scripts up without being told, because both walk `git ls-files` over `*.sh` and `*.bash`.
 
-Unlike the [hooks](#hooks) tests, these stay behind [cleanup-template.sh](../scripts/cleanup-template.sh): the workflows and the setup script stay, so their tests do too.
+Unlike the [hooks](#hooks) tests, these stay behind [cleanup-template.sh](../scripts/cleanup-template.sh): the workflows and the setup script stay, so their tests do too. The one exception is cleanup-template.sh's own test, which the script deletes along with itself.
 
 ## osv-scanner
 
@@ -440,3 +454,30 @@ GitHub automatically disables schedule triggers after 60 days without repository
 ### Where queries are sent
 
 By default the package names and versions are sent to [api.osv.dev](https://osv.dev) for matching (the source code is not sent). If you want nothing to leave the runner, add `--offline-vulnerabilities` (with `--download-offline-databases` for the first fetch) to `scan-args` to match against a vulnerability database downloaded onto the runner.
+
+## Scorecard
+
+[OpenSSF Scorecard](https://github.com/ossf/scorecard) scores **the repository's security posture as a whole** on a 0–10 scale against a public set of checks: branch protection, token permissions, dependency pinning, dangerous workflow patterns, and so on. The other checks each guard one kind of artifact; Scorecard grades the combination, so a regression that no individual check owns still surfaces.
+
+[scorecard.yml](../.github/workflows/scorecard.yml) has the same three triggers as the [osv-scanner full scan](#full-scan-scheduled), except the schedule is weekly (Tuesday 05:00 JST) — the score follows settings and workflow definitions, which change far less often than vulnerability disclosures. Findings appear under Code scanning on the Security tab as the `Scorecard` tool.
+
+**Findings do not block merges**: the `code_scanning` rule in [main.json](../.github/rulesets/main.json) names only CodeQL. Scorecard findings are graded advice about posture, not defects in the change at hand, so they are reviewed from the Security tab and adopted deliberately rather than enforced per PR.
+
+### The published score and the workflow restrictions
+
+`publish_results: true` sends the score to the public [Scorecard API](https://scorecard.dev), where anyone can view it at `https://scorecard.dev/viewer/?uri=github.com/OWNER/REPO`. To show it in the README, add a badge:
+
+```markdown
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/OWNER/REPO/badge)](https://scorecard.dev/viewer/?uri=github.com/OWNER/REPO)
+```
+
+In exchange, the API [restricts how the producing workflow may be written](https://github.com/ossf/scorecard-action#workflow-restrictions): the steps of the `analysis` job are limited to an approved list of actions, and the job can carry no `env`, containers, or services. **Adding a step to that job — installing a tool with mise, for example — makes publishing fail** (it surfaces through the issue below). Put anything extra in a separate job; `notify` already is one.
+
+### Two checks that cannot reach full marks
+
+- **Branch-Protection** — reading the full protection settings requires admin access, and the workflow runs with the default `GITHUB_TOKEN`, which has none. Scorecard scores what is publicly visible and stops there. Registering another long-lived admin token is not worth the difference: the settings themselves are already verified daily by the [settings drift check](drift-check.md#settings-drift-check).
+- **CII-Best-Practices** — scores holding an [OpenSSF Best Practices badge](https://www.bestpractices.dev/), which is an application to an external program, not a repository setting.
+
+### When the run fails
+
+When the run itself fails — the Scorecard API being down, or an edit that broke the restrictions above — the `notify` job opens an issue titled `scorecard runs are failing` with the `maintenance` label, using [the same mechanism as the settings drift check](drift-check.md#notification-on-failure), and once a run passes it closes automatically.

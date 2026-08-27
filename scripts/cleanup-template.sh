@@ -21,7 +21,8 @@
 # .claude/settings.local.json) go with it. Elsewhere untracked files are left
 # where they are.
 #
-# The script deletes itself as its last act, so it runs once.
+# The script deletes itself (and its test under scripts/tests/) as its last act,
+# so it runs once.
 #
 # Usage:
 #   ./scripts/cleanup-template.sh            # list what will go, ask, then delete
@@ -57,7 +58,7 @@ TARGET_GROUPS=(
   "Documentation about the template itself:README.md README.ja.md docs CLAUDE.md"
   "Claude Code settings, skills, hook scripts, and the tests behind them that back CLAUDE.md:.claude"
   "Community documents written for this repository:CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md"
-  "This script:scripts/cleanup-template.sh"
+  "This script and its test:scripts/cleanup-template.sh scripts/tests/cleanup-template.bats"
 )
 
 # The stub written in place of the deleted README. The name comes from the origin

@@ -2,6 +2,8 @@
 
 [English](README.md) | **日本語**
 
+[![ci](https://github.com/kentayamada-dev/repo-baseline/actions/workflows/ci.yml/badge.svg)](https://github.com/kentayamada-dev/repo-baseline/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/kentayamada-dev/repo-baseline/badge)](https://scorecard.dev/viewer/?uri=github.com/kentayamada-dev/repo-baseline)
+
 リポジトリ運用の土台（ブランチ保護と、拡張前提の CI ワークフロー）を収めたテンプレートリポジトリ。
 
 **アプリケーションコードは含まれていません。** アプリの実装はこのテンプレートから作ったリポジトリで進めます（[アプリコードを追加したら](docs/ci-jobs.ja.md#アプリコードを追加したら)）。**public リポジトリ専用です**（private では ruleset や Code scanning の利用条件が異なるため）。
@@ -29,9 +31,10 @@
 | [.github/rulesets/main.json](.github/rulesets/main.json) | main のブランチ保護（GitHub Repository Ruleset）の定義 |
 | [scripts/sync-repo-config.sh](scripts/sync-repo-config.sh) | 上記 ruleset とリポジトリ設定をまとめて適用・検査するスクリプト |
 | [scripts/cleanup-template.sh](scripts/cleanup-template.sh) | テンプレート自身に属するファイルを削除するスクリプト（[テンプレート自身のファイルを削除する](#テンプレート自身のファイルを削除する)） |
-| [scripts/tests/](scripts/tests) | sync-repo-config.sh のテスト。CI で実行される（[script-tests](docs/ci-jobs.ja.md#script-tests)） |
+| [scripts/tests/](scripts/tests) | 上記 2 スクリプトのテスト。CI で実行される（[script-tests](docs/ci-jobs.ja.md#script-tests)） |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml) | CI。必須チェックとなるゲートジョブ `ci` と検査ジョブ（[一覧](docs/ci-jobs.ja.md#ci-の検査ジョブ)） |
 | [.github/workflows/osv-scanner.yml](.github/workflows/osv-scanner.yml) | 依存パッケージの既知の脆弱性の定期検査（毎日 / [osv-scanner](docs/ci-jobs.ja.md#osv-scanner)） |
+| [.github/workflows/scorecard.yml](.github/workflows/scorecard.yml) | OpenSSF Scorecard によるリポジトリのセキュリティ体制の定期採点（毎週 / [Scorecard](docs/ci-jobs.ja.md#scorecard)） |
 | [.github/workflows/repo-settings.yml](.github/workflows/repo-settings.yml) | リポジトリ設定と ruleset のずれの定期検査（毎日 / [設定のずれの検査](docs/drift-check.ja.md#設定のずれの検査)） |
 | [.github/workflows/link-check.yml](.github/workflows/link-check.yml) | ドキュメントの外部リンクの定期検査（毎日 / [外部リンクの定期検査](docs/ci-jobs.ja.md#外部リンクの定期検査)） |
 | [.github/workflows/renovate.yml](.github/workflows/renovate.yml) | Renovate の実行（[更新の一覧の issue](docs/renovate.ja.md#更新の一覧の-issue)） |
@@ -45,7 +48,7 @@
 | [.claude/hooks/](.claude/hooks) | CLAUDE.md の規則を強制するフックスクリプト |
 | [.claude/skills/docs-check/SKILL.md](.claude/skills/docs-check/SKILL.md) | 重複・ドキュメント陳腐化チェックの手順（`/docs-check` で実行） |
 | [.claude/tests/](.claude/tests) | フックスクリプトと、それを呼び出す設定のテスト。CI で実行される（[hooks](docs/ci-jobs.ja.md#hooks)） |
-| [mise.toml](mise.toml) | CI で使う検査ツールのバージョン |
+| [mise.toml](mise.toml) | CI で使う検査ツールのバージョンと、同じ検査を手元で回すタスク（`mise run check`） |
 | [.markdownlint-cli2.jsonc](.markdownlint-cli2.jsonc) | Markdown の書式検査 markdownlint-cli2 の設定 |
 | [.typos.toml](.typos.toml) | 誤字検査 typos の設定 |
 | [.editorconfig](.editorconfig) | エディタ側の書式設定（インデント / 改行 / 文字コード） |
@@ -147,6 +150,12 @@ gh pr merge --auto --squash
 ```
 
 承認は 0 人でよいのでセルフマージできますが、CI が通らない限りマージはされません。`gh pr merge --auto --squash` を付けておくと、CI が通った時点で自動的にマージされます（マージ方式は squash のみ有効ですが、非対話の実行では方式を明示しないとエラーになります）。
+
+CI の検査は push する前に手元で再現できます。[mise](https://mise.jdx.dev/) が入っていれば、下のコマンドが手元のチェックアウトで動く検査すべてを、CI と同じコマンド・同じツールバージョンで実行します（[検査を手元で再現する](docs/ci-jobs.ja.md#検査を手元で再現する)）。
+
+```bash
+mise run check
+```
 
 main が進んだ PR は、最新化するまでマージできません。PR 画面の「Update branch」を押すか、`git merge origin/main` して push してください。CI が再実行され、通ればマージできます。
 

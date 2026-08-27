@@ -88,13 +88,11 @@ jobs:
           cache_save: ${{ github.event_name == 'push' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - name: Check .editorconfig compliance
-        run: ec
-      - name: Check shell script formatting
-        run: |
-          set -euo pipefail
-          git ls-files -z '*.sh' '*.bash' \
-            | xargs -0 -r shfmt -d -i 2 -ci
+      # The check commands are mise tasks (mise.toml), shared with local runs.
+      # --skip-tools keeps mise from installing every tool in mise.toml; the
+      # job's mise-action step already installed the ones its task needs.
+      - name: Check formatting
+        run: mise run --skip-tools check:format
 
   actionlint:
     runs-on: ubuntu-24.04-arm
@@ -113,7 +111,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Lint workflow files
-        run: actionlint -color
+        run: mise run --skip-tools check:actionlint
 
   shellcheck:
     runs-on: ubuntu-24.04-arm
@@ -135,10 +133,7 @@ jobs:
           # read-only token.
           GITHUB_TOKEN: ${{ github.token }}
       - name: Lint shell scripts
-        run: |
-          set -euo pipefail
-          git ls-files -z '*.sh' '*.bash' \
-            | xargs -0 -r shellcheck --color=always --external-sources
+        run: mise run --skip-tools check:shellcheck
 
   hadolint:
     runs-on: ubuntu-24.04-arm
@@ -157,10 +152,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Lint Dockerfiles
-        run: |
-          set -euo pipefail
-          git ls-files -z '*Dockerfile' '*Dockerfile.*' '*.dockerfile' \
-            | xargs -0 -r hadolint
+        run: mise run --skip-tools check:hadolint
 
   typos:
     runs-on: ubuntu-24.04-arm
@@ -179,7 +171,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Check for typos
-        run: typos --color always
+        run: mise run --skip-tools check:typos
 
   lychee:
     runs-on: ubuntu-24.04-arm
@@ -198,7 +190,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Check links
-        run: lychee --offline --include-fragments --no-progress .
+        run: mise run --skip-tools check:lychee
 
   markdownlint:
     runs-on: ubuntu-24.04-arm
@@ -230,7 +222,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Lint workflow files for security policies
-        run: ghalint run
+        run: mise run --skip-tools check:ghalint
 
   zizmor:
     runs-on: ubuntu-24.04-arm
@@ -251,7 +243,7 @@ jobs:
       - name: Audit workflow files for security issues
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: zizmor --color=always --strict-collection .
+        run: mise run --skip-tools check:zizmor
 
   gitleaks:
     runs-on: ubuntu-24.04-arm
@@ -271,7 +263,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Scan git history for secrets
-        run: gitleaks git --redact --verbose --no-banner
+        run: mise run --skip-tools check:gitleaks
 
   setup-script:
     if: github.event.repository.private == false
@@ -312,10 +304,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Test the Claude Code hooks
-        run: |
-          set -euo pipefail
-          git ls-files -z '.claude/tests/*.bats' \
-            | xargs -0 -r bats --print-output-on-failure
+        run: mise run --skip-tools check:hooks
 
   script-tests:
     runs-on: ubuntu-24.04-arm
@@ -334,10 +323,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Test the scripts the workflows call
-        run: |
-          set -euo pipefail
-          git ls-files -z '.github/scripts/tests/*.bats' 'scripts/tests/*.bats' \
-            | xargs -0 -r bats --print-output-on-failure
+        run: mise run --skip-tools check:script-tests
 
   issue-forms:
     runs-on: ubuntu-24.04-arm
@@ -356,13 +342,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Validate issue forms
-        run: |
-          set -euo pipefail
-          git ls-files -z '.github/ISSUE_TEMPLATE/*.yml' '.github/ISSUE_TEMPLATE/*.yaml' \
-            ':!:.github/ISSUE_TEMPLATE/config.yml' ':!:.github/ISSUE_TEMPLATE/config.yaml' \
-            | xargs -0 -r check-jsonschema --builtin-schema vendor.github-issue-forms
-          git ls-files -z '.github/ISSUE_TEMPLATE/config.yml' '.github/ISSUE_TEMPLATE/config.yaml' \
-            | xargs -0 -r check-jsonschema --builtin-schema vendor.github-issue-config
+        run: mise run --skip-tools check:issue-forms
 
   renovate-config:
     runs-on: ubuntu-24.04-arm

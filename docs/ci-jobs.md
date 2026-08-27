@@ -324,20 +324,20 @@ The tests live under `.claude/` rather than in a `tests/` directory of their own
 
 ## script-tests
 
-The `script-tests` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in [.github/scripts/tests/](../.github/scripts/tests) against the scripts in the directory above them, [.github/scripts/](../.github/scripts) — the two the scheduled workflows call to report a failing check as an issue and to retract it once the check passes.
+The `script-tests` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in two directories, each against the scripts next to them. [.github/scripts/tests/](../.github/scripts/tests) covers [.github/scripts/](../.github/scripts) — the two the scheduled workflows call to report a failing check as an issue and to retract it once the check passes. [scripts/tests/](../scripts/tests) covers [sync-repo-config.sh](../scripts/sync-repo-config.sh) — the script whose OK / DRIFT / UNKNOWN verdicts the [settings drift check](drift-check.md#settings-drift-check) relies on.
 
 ```bash
-git ls-files -z '.github/scripts/tests/*.bats' \
+git ls-files -z '.github/scripts/tests/*.bats' 'scripts/tests/*.bats' \
   | xargs -0 -r bats --print-output-on-failure
 ```
 
-The tests replace `gh` with a stub ([helper.bash](../.github/scripts/tests/helper.bash) explains how), so nothing reaches GitHub and no token is needed — which is what makes the decisions around those calls (the ones each script's `--help` describes) testable at all.
+The tests replace `gh` with a stub (the `helper.bash` next to each `.bats` file explains how), so nothing reaches GitHub and no token is needed — which is what makes the decisions around those calls (the ones each script's `--help` describes) testable at all. For sync-repo-config.sh that is also what [setup-script](#setup-script) cannot reach: a dry run stops before any verdict or write, so the OK / DRIFT / UNKNOWN classification of `--check` and the apply path are only exercised here.
 
 Being reachable by a test is the reason this logic sits in `.github/scripts/` rather than inline in the workflows. A `run:` block can only be exercised by triggering the workflow around it, and for these that means waiting for a scheduled check to fail.
 
-As with [hooks](#hooks), bats is the only addition to [mise.toml](../mise.toml). [shellcheck](#shellcheck) and [format](../README.md#consistent-formatting) pick the scripts up without being told, because both walk `git ls-files` over `*.sh`.
+As with [hooks](#hooks), bats is the only addition to [mise.toml](../mise.toml). [shellcheck](#shellcheck) and [format](../README.md#consistent-formatting) pick the scripts up without being told, because both walk `git ls-files` over `*.sh` and `*.bash`.
 
-Unlike the [hooks](#hooks) tests, these stay behind [cleanup-template.sh](../scripts/cleanup-template.sh): the workflows that call the scripts stay, so the scripts and their tests do too.
+Unlike the [hooks](#hooks) tests, these stay behind [cleanup-template.sh](../scripts/cleanup-template.sh): the workflows and the setup script stay, so their tests do too.
 
 ## osv-scanner
 
@@ -387,6 +387,8 @@ Two costs are accepted:
 ```
 
 `fail-on-vuln: false` is set (the default is `true`). Detections show up as Code scanning alerts, so the job is not failed. Failing it would turn things red every day over the same vulnerability, with no way to record "handled" or "watching" individually. Alerts are updated on every run, and the alert for a fixed vulnerability closes automatically. To be notified, watch the repository and enable Code scanning alert notifications.
+
+When the run itself fails — as opposed to finding vulnerabilities — the `notify` job opens an issue titled `osv-scanner runs are failing` with the `maintenance` label, using [the same mechanism as the settings drift check](drift-check.md#notification-on-failure), and once a run passes it closes automatically. Without the issue the failure would be invisible: a scan that found nothing and a scan that never ran look the same from the Security tab.
 
 ### Diff scan (on PRs)
 

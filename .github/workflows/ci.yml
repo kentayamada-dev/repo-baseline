@@ -336,7 +336,7 @@ jobs:
       - name: Test the scripts the workflows call
         run: |
           set -euo pipefail
-          git ls-files -z '.github/scripts/tests/*.bats' \
+          git ls-files -z '.github/scripts/tests/*.bats' 'scripts/tests/*.bats' \
             | xargs -0 -r bats --print-output-on-failure
 
   issue-forms:

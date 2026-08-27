@@ -15,7 +15,7 @@
 | secret scanning の push protection | 有効になっているか |
 | Actions の `GITHUB_TOKEN` の既定権限（read 固定 / PR の作成・承認の禁止） | 値が定義と一致するか |
 | ラベル（[ラベル](../README.ja.md#ラベル)の 4 つ） | **同じ名前のものが存在するか** |
-| ruleset（`.github/rulesets/*.json` の各ファイル） | enforcement・対象・bypass・全ルールの中身が定義と一致するか |
+| ruleset（`.github/rulesets/*.json` の各ファイル） | enforcement・対象・bypass actor の数・全ルールの中身が定義と一致するか |
 
 ruleset で突き合わせるのは定義に書いた項目だけです。API は `id` や `created_at`、後から GitHub が増やすパラメータを自分で足してくるので、それらをずれとして扱うと GitHub 側の追加のたびに落ちてしまいます。配列は比較前に整列させます。送った順序で返る保証がないためです。定義に無いルールは `unexpected rule` として報告するので、UI で足されたルールも捕まえられます。
 

@@ -396,7 +396,7 @@ The `osv-scanner-diff` job in [ci.yml](../.github/workflows/ci.yml) scans both t
 
 Things to note:
 
-- **`timeout-minutes` cannot be written.** A job that calls a reusable workflow with `uses` cannot specify it ([ghalint](#ghalint) treats this case as an exception too). The limit becomes GitHub's default of six hours. The same applies to the full scan.
+- **`timeout-minutes` cannot be written** (the exception covered in [Adding a job to CI](#adding-a-job-to-ci)). The limit becomes GitHub's default of six hours. The same applies to the full scan.
 - On a PR from a fork, `security-events: write` is not granted and the SARIF upload may fail (the same story as [CodeQL](#codeql)). Once you start accepting outside PRs, pass `upload-sarif: false` (the diff determination and the job's pass/fail keep working).
 - On `push` (= a merge) there is no base to compare against, so it is skipped (`skipped` counts as a success in `ci`).
 

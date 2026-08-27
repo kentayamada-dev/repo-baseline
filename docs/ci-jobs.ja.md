@@ -296,9 +296,8 @@ excludes:
 
 走査対象は履歴全体です。`gitleaks git` は内部で `git log -p` を使うため、`actions/checkout` に `fetch-depth: 0` を付けて浅いクローンを避けています（既定の深さ 1 では過去のコミットに入った値を見落とします）。
 
-```yaml
-      - name: Scan git history for secrets
-        run: gitleaks git --redact --verbose --no-banner
+```bash
+gitleaks git --redact --verbose --no-banner
 ```
 
 `--redact` は検出した値そのものをログに出さないための指定です。public リポジトリでは実行ログも公開されるため、これが無いと検査自体が漏洩経路になります。`--verbose` は検出箇所（コミット / ファイル / 行 / ルール ID / fingerprint）を出します。

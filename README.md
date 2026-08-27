@@ -121,7 +121,7 @@ gh api --method DELETE repos/OWNER/REPO/branches/main/protection
 | Linear history | Required (no merge commits) |
 | Deleting / force-pushing main | Forbidden |
 
-There is a single ruleset, [main.json](.github/rulesets/main.json), and it targets only `main`. Nothing applies to branches other than main, and no bypass is granted, not even to administrators. To change the settings, edit the JSON and run the script again (all of `.github/rulesets/*.json` is applied, and a ruleset of the same name is updated).
+There is a single ruleset, [main.json](.github/rulesets/main.json), and it targets only `main`. Nothing applies to branches other than main, and no bypass is granted, not even to administrators. To change the settings, edit the JSON and run the script again.
 
 Signed commits are not required. The rule reads every commit in the pull request, not just the squash commit GitHub creates and signs on merge, so it would block Renovate's update PRs, whose commits are unsigned.
 

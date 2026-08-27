@@ -16,3 +16,94 @@ shellcheck = "0.11.0"
 shfmt = "3.13.1"
 typos = "1.49.0"
 zizmor = "1.29.0"
+
+# One task per check job in ci.yml, named after it. The job's run: step calls
+# its task, so the command lives only here; locally the same checks run with
+# `mise run check` (all of them) or `mise run check:<job>` (one). The jobs with
+# no task are the ones that cannot run from a local checkout alone
+# (docs/ci-jobs.md#reproducing-the-checks-locally).
+[tasks.check]
+description = "Run every CI check that works from a local checkout"
+depends = ["check:*"]
+
+[tasks."check:format"]
+description = ".editorconfig compliance and shell script formatting"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+ec
+git ls-files -z '*.sh' '*.bash' \
+  | xargs -0 -r shfmt -d -i 2 -ci
+'''
+
+[tasks."check:actionlint"]
+description = "Syntax and expression errors in workflow definitions"
+run = "actionlint -color"
+
+[tasks."check:shellcheck"]
+description = "Shell-script patterns that misbehave silently"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+git ls-files -z '*.sh' '*.bash' \
+  | xargs -0 -r shellcheck --color=always --external-sources
+'''
+
+[tasks."check:hadolint"]
+description = "Dockerfile patterns that cost reproducibility, size, or privilege"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+git ls-files -z '*Dockerfile' '*Dockerfile.*' '*.dockerfile' \
+  | xargs -0 -r hadolint
+'''
+
+[tasks."check:typos"]
+description = "Typos"
+run = "typos --color always"
+
+[tasks."check:lychee"]
+description = "Broken links and broken anchors in Markdown"
+run = "lychee --offline --include-fragments --no-progress ."
+
+[tasks."check:ghalint"]
+description = "Workflow security (how they are written)"
+run = "ghalint run"
+
+[tasks."check:zizmor"]
+description = "Workflow security (attack paths)"
+run = "zizmor --color=always --strict-collection ."
+
+[tasks."check:gitleaks"]
+description = "Secrets that crept into the commit history"
+run = "gitleaks git --redact --verbose --no-banner"
+
+[tasks."check:hooks"]
+description = "The Claude Code hooks still allow and refuse what CLAUDE.md says"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+git ls-files -z '.claude/tests/*.bats' \
+  | xargs -0 -r bats --print-output-on-failure
+'''
+
+[tasks."check:script-tests"]
+description = "The scripts the workflows call still decide the same way"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+git ls-files -z '.github/scripts/tests/*.bats' 'scripts/tests/*.bats' \
+  | xargs -0 -r bats --print-output-on-failure
+'''
+
+[tasks."check:issue-forms"]
+description = "The issue forms follow the schema"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+git ls-files -z '.github/ISSUE_TEMPLATE/*.yml' '.github/ISSUE_TEMPLATE/*.yaml' \
+  ':!:.github/ISSUE_TEMPLATE/config.yml' ':!:.github/ISSUE_TEMPLATE/config.yaml' \
+  | xargs -0 -r check-jsonschema --builtin-schema vendor.github-issue-forms
+git ls-files -z '.github/ISSUE_TEMPLATE/config.yml' '.github/ISSUE_TEMPLATE/config.yaml' \
+  | xargs -0 -r check-jsonschema --builtin-schema vendor.github-issue-config
+'''

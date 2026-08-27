@@ -2,6 +2,8 @@
 
 **English** | [日本語](README.ja.md)
 
+[![ci](https://github.com/kentayamada-dev/repo-baseline/actions/workflows/ci.yml/badge.svg)](https://github.com/kentayamada-dev/repo-baseline/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/kentayamada-dev/repo-baseline/badge)](https://scorecard.dev/viewer/?uri=github.com/kentayamada-dev/repo-baseline)
+
 A template repository providing the groundwork for repository operations: branch protection and a CI workflow built to be extended.
 
 **It contains no application code.** The application itself is built in a repository created from this template ([After adding application code](docs/ci-jobs.md#after-adding-application-code)). **It is for public repositories only** (the conditions for using rulesets and Code scanning differ on private ones).
@@ -29,9 +31,10 @@ The rest is reference material to look up when you need it.
 | [.github/rulesets/main.json](.github/rulesets/main.json) | The branch protection definition for main (a GitHub Repository Ruleset) |
 | [scripts/sync-repo-config.sh](scripts/sync-repo-config.sh) | A script that applies and checks the ruleset above together with the repository settings |
 | [scripts/cleanup-template.sh](scripts/cleanup-template.sh) | A script that deletes the files belonging to the template itself ([Removing the template's own files](#removing-the-templates-own-files)) |
-| [scripts/tests/](scripts/tests) | Tests for sync-repo-config.sh, run in CI ([script-tests](docs/ci-jobs.md#script-tests)) |
+| [scripts/tests/](scripts/tests) | Tests for the two scripts above, run in CI ([script-tests](docs/ci-jobs.md#script-tests)) |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml) | CI. The gate job `ci` that serves as the required check, plus the check jobs ([list](docs/ci-jobs.md#ci-check-jobs)) |
 | [.github/workflows/osv-scanner.yml](.github/workflows/osv-scanner.yml) | Scheduled scan for known vulnerabilities in dependencies (daily / [osv-scanner](docs/ci-jobs.md#osv-scanner)) |
+| [.github/workflows/scorecard.yml](.github/workflows/scorecard.yml) | Scheduled scoring of the repository's security posture with OpenSSF Scorecard (weekly / [Scorecard](docs/ci-jobs.md#scorecard)) |
 | [.github/workflows/repo-settings.yml](.github/workflows/repo-settings.yml) | Scheduled check for drift in repository settings and rulesets (daily / [Settings drift check](docs/drift-check.md#settings-drift-check)) |
 | [.github/workflows/link-check.yml](.github/workflows/link-check.yml) | Scheduled check of the external links in the documentation (daily / [Scheduled external link checks](docs/ci-jobs.md#scheduled-external-link-checks)) |
 | [.github/workflows/renovate.yml](.github/workflows/renovate.yml) | Runs Renovate ([The update list issue](docs/renovate.md#the-update-list-issue)) |
@@ -45,7 +48,7 @@ The rest is reference material to look up when you need it.
 | [.claude/hooks/](.claude/hooks) | The hook scripts that enforce the rules in CLAUDE.md |
 | [.claude/skills/docs-check/SKILL.md](.claude/skills/docs-check/SKILL.md) | The duplication and stale-docs check to run (run as `/docs-check`) |
 | [.claude/tests/](.claude/tests) | Tests for the hook scripts and the settings that wire them up, run in CI ([hooks](docs/ci-jobs.md#hooks)) |
-| [mise.toml](mise.toml) | Versions of the check tools used in CI |
+| [mise.toml](mise.toml) | Versions of the check tools used in CI, and the tasks that run the same checks locally (`mise run check`) |
 | [.markdownlint-cli2.jsonc](.markdownlint-cli2.jsonc) | Configuration for markdownlint-cli2, the Markdown format checker |
 | [.typos.toml](.typos.toml) | Configuration for typos, the typo checker |
 | [.editorconfig](.editorconfig) | Editor-side formatting settings (indentation / line endings / encoding) |
@@ -147,6 +150,12 @@ gh pr merge --auto --squash
 ```
 
 Zero approvals are required, so you can merge your own PR, but nothing merges until CI passes. Adding `gh pr merge --auto --squash` merges automatically as soon as CI passes (squash is the only enabled merge method, and non-interactive runs error out without an explicit method).
+
+The checks CI runs can be reproduced before pushing. With [mise](https://mise.jdx.dev/) installed, the command below runs every check that works from a local checkout, with the same commands and tool versions as CI ([Reproducing the checks locally](docs/ci-jobs.md#reproducing-the-checks-locally)).
+
+```bash
+mise run check
+```
 
 A PR whose base has moved ahead cannot be merged until it is brought up to date. Click "Update branch" on the PR page, or run `git merge origin/main` and push. CI runs again, and once it passes the PR can be merged.
 

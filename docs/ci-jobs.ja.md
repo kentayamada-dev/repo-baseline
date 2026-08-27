@@ -25,7 +25,7 @@
 | `renovate-config` | Renovate 設定の検証 | [設定の検証](renovate.ja.md#設定の検証) |
 | `osv-scanner-diff` | PR が新たに持ち込む依存の脆弱性 | [osv-scanner](#osv-scanner) |
 
-コードを変えなくても結果が変わる検査（[設定のずれの検査](drift-check.ja.md#設定のずれの検査)、[osv-scanner](#osv-scanner) の全体検査、[外部リンクの検査](#外部リンクの定期検査)）は、`ci` に入れると無関係な PR まで止めるため、別ワークフローの定期実行にしてあります。
+コードを変えなくても結果が変わる検査（[設定のずれの検査](drift-check.ja.md#設定のずれの検査)、[osv-scanner](#osv-scanner) の全体検査、[外部リンクの検査](#外部リンクの定期検査)、[Scorecard](#scorecard)）は、`ci` に入れると無関係な PR まで止めるため、別ワークフローの定期実行にしてあります。
 
 ## CI にジョブを追加する
 
@@ -48,6 +48,7 @@ jobs:
 注意点:
 
 - ジョブには `permissions` と `timeout-minutes` を必ず書き、`actions/checkout` には `persist-credentials: false` を付けてください。[`ghalint`](#ghalint) が強制します。例外は再利用可能ワークフローを `uses` で呼ぶジョブで、そこには `timeout-minutes` を書けません（[`osv-scanner-diff`](#osv-scanner) が該当します）。
+- 可能なら、ジョブのコマンドは [mise.toml](../mise.toml) の `check:<ジョブ名>` タスクに置き、ジョブはそれを呼ぶ形にしてください。検査を手元で再現できる状態が保たれます（[検査を手元で再現する](#検査を手元で再現する)）。
 - ワークフロー全体に `paths` フィルタを付けないこと。対象外の PR で `ci` が報告されず、必須チェック待ちのままマージ不能になります。絞るならジョブ側の `if` を使います。
 - `ci` ジョブの名前を変えるときは、[main.json](../.github/rulesets/main.json) の `context` も合わせて変更してください。
 - **CI を GitHub Actions 以外から報告するようにしないこと。** `context` と一緒に `integration_id`（GitHub Actions の App ID）を指定してあり、他の App やトークンが報告した同名のチェックは無視されます。外部 CI へ移行する場合はこの値も移行先の App ID に変えないと、必須チェック待ちで止まります（[確認方法](troubleshooting.ja.md#トラブルシューティング)）。
@@ -87,6 +88,19 @@ lockfile（`package-lock.json` や `go.mod` など）は、置いた時点で os
 mise 本体のバージョンは [mise-action](https://github.com/jdx/mise-action) の `version` 入力で固定しています（Renovate がこの入力を標準で見ます）。action 自体は他と同じく commit SHA 固定です。`mise.lock` は置いていません（理由は [mise.toml](../mise.toml) のコメントを参照）。
 
 キャッシュの書き込みは `cache_save: ${{ github.event_name == 'push' }}` として main への push のときだけに限っています。キャッシュはブランチスコープで、PR ブランチに保存したものはマージ後は誰も使わないまま 7 日間残るためです。main のキャッシュは全ブランチから読めるので、[mise.toml](../mise.toml) を変えない PR ではヒットし、速度は落ちません。
+
+### 検査を手元で再現する
+
+検査ジョブが実行するコマンドは、ジョブと同名のタスクとして [mise.toml](../mise.toml) に一度だけ定義してあり、各ジョブの `run:` は `mise run --skip-tools check:<ジョブ名>` でそれを呼びます（このフラグは mise が mise.toml の全ツールを入れようとするのを止めます。ジョブが必要とする分は mise-action のステップが入れ終わっています）。同じタスクで CI を手元で再現できます。前提は [mise](https://mise.jdx.dev/) だけです。
+
+```bash
+mise run check              # 手元のチェックアウトで動く検査すべて
+mise run check:shellcheck   # 1 つのジョブの検査だけ
+```
+
+初回の実行で固定版のツールが入ります。コマンドもバージョンも両側が同じファイルを読むため、結果は CI と一致します。注意は 2 つ。[zizmor](#zizmor) は環境変数 `GITHUB_TOKEN` が無いとオフラインで動き、オンラインの監査は警告付きでスキップされます。[gitleaks](#gitleaks) は shallow clone には無い全履歴を必要とします。
+
+タスクが無いジョブは、手元のチェックアウトだけでは動かないものです。[CodeQL](#codeql) と `pr-title` は GitHub 側を必要とし、[setup-script](#setup-script) はトークンと API を必要とし、[markdownlint-cli2](#markdownlint-cli2)・[renovate-config](renovate.ja.md#設定の検証)・[osv-scanner](#osv-scanner) は前述の、mise を通さない 3 つの例外です。
 
 ## CodeQL
 
@@ -324,20 +338,20 @@ git ls-files -z '.claude/tests/*.bats' \
 
 ## script-tests
 
-[ci.yml](../.github/workflows/ci.yml) の `script-tests` ジョブが、2 つの置き場にある [bats](https://bats-core.readthedocs.io/) のテストで、それぞれ隣にあるスクリプトを検査します。[.github/scripts/tests/](../.github/scripts/tests) は 1 つ上の [.github/scripts/](../.github/scripts) を検査します。定期実行のワークフローが、落ちた検査を issue として報告し、通ったら取り下げるために呼ぶ 2 つです。[scripts/tests/](../scripts/tests) は [sync-repo-config.sh](../scripts/sync-repo-config.sh) を検査します。[設定のずれの検査](drift-check.ja.md#設定のずれの検査)が OK / DRIFT / UNKNOWN の判定を頼っているスクリプトです。
+[ci.yml](../.github/workflows/ci.yml) の `script-tests` ジョブが、2 つの置き場にある [bats](https://bats-core.readthedocs.io/) のテストで、それぞれ隣にあるスクリプトを検査します。[.github/scripts/tests/](../.github/scripts/tests) は 1 つ上の [.github/scripts/](../.github/scripts) を検査します。定期実行のワークフローが、落ちた検査を issue として報告し、通ったら取り下げるために呼ぶ 2 つです。[scripts/tests/](../scripts/tests) は [scripts/](../scripts) の 2 つを検査します。[設定のずれの検査](drift-check.ja.md#設定のずれの検査)が OK / DRIFT / UNKNOWN の判定を頼っている [sync-repo-config.sh](../scripts/sync-repo-config.sh) と、ファイルを削除し一度しか走らない [cleanup-template.sh](../scripts/cleanup-template.sh) です。
 
 ```bash
 git ls-files -z '.github/scripts/tests/*.bats' 'scripts/tests/*.bats' \
   | xargs -0 -r bats --print-output-on-failure
 ```
 
-テストは `gh` をスタブに差し替えるので（仕組みは各 `.bats` の隣の `helper.bash` にあります）、GitHub には何も届かずトークンも要りません。だからこそ、その呼び出しの周りにある判断（各スクリプトの `--help` が説明している内容）をそもそも検査できます。sync-repo-config.sh については、[setup-script](#setup-script) が届かない部分でもあります。dry run は判定にも書き込みにも進まないため、`--check` の OK / DRIFT / UNKNOWN の判定と適用の経路が動くのはここだけです。
+GitHub を呼ぶスクリプトのテストは `gh` をスタブに差し替えるので（仕組みは隣の `helper.bash` にあります）、GitHub には何も届かずトークンも要りません。だからこそ、その呼び出しの周りにある判断（各スクリプトの `--help` が説明している内容）をそもそも検査できます。cleanup-template.sh は API を呼ばないので、そのテストは代わりに使い捨ての git リポジトリの中で実行します。いずれにせよこのジョブが動かすのは [setup-script](#setup-script) が届かない部分です。dry run は判定にも書き込みにも進まないため、`--check` の OK / DRIFT / UNKNOWN の判定と適用の経路、そして削除そのものが動くのはここだけです。
 
 このロジックをワークフローに直接書かず `.github/scripts/` に置いてあるのは、テストから触れるようにするためです。`run:` の中身は囲んでいるワークフローを起動しないと動かせず、この 2 つの場合それは定期実行の検査が落ちるのを待つことを意味します。
 
 [hooks](#hooks) と同じく、[mise.toml](../mise.toml) に足すのは bats だけです。[shellcheck](#shellcheck) と [format](../README.ja.md#書式の統一) はどちらも `git ls-files` で `*.sh` と `*.bash` を辿るため、何もしなくてもこのスクリプトを拾います。
 
-[hooks](#hooks) のテストと違い、こちらは [cleanup-template.sh](../scripts/cleanup-template.sh) の後も残ります。ワークフローとセットアップスクリプトが残るので、そのテストも残ります。
+[hooks](#hooks) のテストと違い、こちらは [cleanup-template.sh](../scripts/cleanup-template.sh) の後も残ります。ワークフローとセットアップスクリプトが残るので、そのテストも残ります。唯一の例外は cleanup-template.sh 自身のテストで、スクリプトが自分と一緒に削除します。
 
 ## osv-scanner
 
@@ -440,3 +454,30 @@ schedule はリポジトリの活動が 60 日間無いと GitHub 側で自動�
 ### 問い合わせ先
 
 既定ではパッケージ名とバージョンを [api.osv.dev](https://osv.dev) へ送って照合します（ソースコードは送りません）。外部へ何も出したくない場合は、脆弱性データベースを runner に落として照合する `--offline-vulnerabilities`（初回の取得は `--download-offline-databases`）を `scan-args` に足します。
+
+## Scorecard
+
+[OpenSSF Scorecard](https://github.com/ossf/scorecard) は、ブランチ保護・トークンの権限・依存の固定・危険なワークフローの書き方などの公開された検査項目に照らして、**リポジトリのセキュリティ体制全体**を 0〜10 で採点します。他の検査はそれぞれ 1 種類の対象を守りますが、Scorecard は組み合わせを採点するので、どの個別検査の持ち場でもない後退にも気付けます。
+
+[scorecard.yml](../.github/workflows/scorecard.yml) の実行のきっかけは [osv-scanner の全体検査](#全体検査定期実行)と同じ 3 つで、schedule だけが毎週（火曜 05:00 JST）です。点数が追うのは設定とワークフロー定義で、脆弱性の公開よりずっと変化が遅いためです。検出は Security タブの Code scanning に `Scorecard` ツールとして出ます。
+
+**検出はマージを止めません。**[main.json](../.github/rulesets/main.json) の `code_scanning` ルールが挙げているのは CodeQL だけです。Scorecard の検出は目の前の変更の欠陥ではなく体制への段階評価付きの助言なので、PR ごとに強制するのではなく、Security タブから確認して取捨選択します。
+
+### 公開スコアとワークフローの制約
+
+`publish_results: true` により点数は公開の [Scorecard API](https://scorecard.dev) へ送られ、誰でも `https://scorecard.dev/viewer/?uri=github.com/OWNER/REPO` で見られます。README に出すにはバッジを足します。
+
+```markdown
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/OWNER/REPO/badge)](https://scorecard.dev/viewer/?uri=github.com/OWNER/REPO)
+```
+
+引き換えに、API は[結果を作るワークフローの書き方を制約します](https://github.com/ossf/scorecard-action#workflow-restrictions)。`analysis` ジョブの step は承認されたアクションの一覧に限られ、ジョブに `env`・コンテナ・サービスを持てません。**このジョブに step を足すと — たとえば mise でツールを入れると — 公開が失敗します**（下の issue で表面化します）。追加のものは別ジョブに置きます。`notify` がまさにそれです。
+
+### 満点にならない 2 つの検査項目
+
+- **Branch-Protection** — 保護設定の全体を読むには admin 権限が要りますが、ワークフローは admin を持たない既定の `GITHUB_TOKEN` で動きます。Scorecard は公開されている範囲だけを採点し、そこで止まります。この差のためにもう 1 つ admin の長命トークンを登録する価値はありません。設定そのものは[設定のずれの検査](drift-check.ja.md#設定のずれの検査)が毎日確認しています。
+- **CII-Best-Practices** — [OpenSSF Best Practices バッジ](https://www.bestpractices.dev/)の保有を採点します。外部プログラムへの申請であって、リポジトリの設定ではありません。
+
+### 実行が落ちたとき
+
+実行そのものが落ちたとき — Scorecard API の障害や、上の制約を破る編集をしたとき — は、`notify` ジョブが[設定のずれの検査と同じ仕組み](drift-check.ja.md#落ちたときの通知)で `scorecard runs are failing` という issue を `maintenance` ラベル付きで立て、実行が通れば自動的に閉じます。

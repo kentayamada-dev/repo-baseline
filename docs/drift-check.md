@@ -15,7 +15,7 @@ The settings the script in [Setup](../README.md#setup) applies can be changed fr
 | Secret scanning push protection | Whether it is enabled |
 | Default permissions of the Actions `GITHUB_TOKEN` (fixed to read / creating and approving PRs forbidden) | Whether the value matches the definition |
 | Labels (the four in [Labels](../README.md#labels)) | **Whether one with the same name exists** |
-| Rulesets (each file in `.github/rulesets/*.json`) | Whether the enforcement, targets, bypass actors, and the contents of every rule match the definition |
+| Rulesets (each file in `.github/rulesets/*.json`) | Whether the enforcement, targets, the number of bypass actors, and the contents of every rule match the definition |
 
 For a ruleset, only what the definition names is compared. The API adds fields of its own — `id`, `created_at`, and parameters GitHub introduces later — and treating those as drift would turn every addition on GitHub's side into a failure. Arrays are sorted before the comparison, because the API does not promise to hand back the order they were sent in. A rule the definition does not have is reported as `unexpected rule`, so a rule added in the UI is caught as well.
 

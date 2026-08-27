@@ -396,7 +396,7 @@ git ls-files -z '.github/scripts/tests/*.bats' 'scripts/tests/*.bats' \
 
 注意点:
 
-- **`timeout-minutes` を書けません。** 再利用可能ワークフローを `uses` で呼ぶジョブでは指定できないためです（[ghalint](#ghalint) もこの場合を例外として扱います）。上限は GitHub 既定の 6 時間になります。全体検査も同じです。
+- **`timeout-minutes` を書けません**（[CI にジョブを追加する](#ci-にジョブを追加する)で説明した例外です）。上限は GitHub 既定の 6 時間になり、全体検査も同じです。
 - fork からの PR では `security-events: write` が付与されず、SARIF のアップロードに失敗する可能性があります（[CodeQL](#codeql) と同じ話です）。外部からの PR を受けるようになったら `upload-sarif: false` を渡してください（差分の判定とジョブの成否はそのまま働きます）。
 - `push`（= マージ）では比較対象の base が無いのでスキップされます（`skipped` は `ci` で成功扱いです）。
 

@@ -29,6 +29,7 @@
 | [.github/rulesets/main.json](.github/rulesets/main.json) | main のブランチ保護（GitHub Repository Ruleset）の定義 |
 | [scripts/sync-repo-config.sh](scripts/sync-repo-config.sh) | 上記 ruleset とリポジトリ設定をまとめて適用・検査するスクリプト |
 | [scripts/cleanup-template.sh](scripts/cleanup-template.sh) | テンプレート自身に属するファイルを削除するスクリプト（[テンプレート自身のファイルを削除する](#テンプレート自身のファイルを削除する)） |
+| [scripts/tests/](scripts/tests) | sync-repo-config.sh のテスト。CI で実行される（[script-tests](docs/ci-jobs.ja.md#script-tests)） |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml) | CI。必須チェックとなるゲートジョブ `ci` と検査ジョブ（[一覧](docs/ci-jobs.ja.md#ci-の検査ジョブ)） |
 | [.github/workflows/osv-scanner.yml](.github/workflows/osv-scanner.yml) | 依存パッケージの既知の脆弱性の定期検査（毎日 / [osv-scanner](docs/ci-jobs.ja.md#osv-scanner)） |
 | [.github/workflows/repo-settings.yml](.github/workflows/repo-settings.yml) | リポジトリ設定と ruleset のずれの定期検査（毎日 / [設定のずれの検査](docs/drift-check.ja.md#設定のずれの検査)） |

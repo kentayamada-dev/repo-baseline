@@ -324,20 +324,20 @@ git ls-files -z '.claude/tests/*.bats' \
 
 ## script-tests
 
-[ci.yml](../.github/workflows/ci.yml) の `script-tests` ジョブが、[.github/scripts/tests/](../.github/scripts/tests) にある [bats](https://bats-core.readthedocs.io/) のテストで、1 つ上の [.github/scripts/](../.github/scripts) にあるスクリプトを検査します。定期実行のワークフローが、落ちた検査を issue として報告し、通ったら取り下げるために呼ぶ 2 つです。
+[ci.yml](../.github/workflows/ci.yml) の `script-tests` ジョブが、2 つの置き場にある [bats](https://bats-core.readthedocs.io/) のテストで、それぞれ隣にあるスクリプトを検査します。[.github/scripts/tests/](../.github/scripts/tests) は 1 つ上の [.github/scripts/](../.github/scripts) を検査します。定期実行のワークフローが、落ちた検査を issue として報告し、通ったら取り下げるために呼ぶ 2 つです。[scripts/tests/](../scripts/tests) は [sync-repo-config.sh](../scripts/sync-repo-config.sh) を検査します。[設定のずれの検査](drift-check.ja.md#設定のずれの検査)が OK / DRIFT / UNKNOWN の判定を頼っているスクリプトです。
 
 ```bash
-git ls-files -z '.github/scripts/tests/*.bats' \
+git ls-files -z '.github/scripts/tests/*.bats' 'scripts/tests/*.bats' \
   | xargs -0 -r bats --print-output-on-failure
 ```
 
-テストは `gh` をスタブに差し替えるので（仕組みは [helper.bash](../.github/scripts/tests/helper.bash) にあります）、GitHub には何も届かずトークンも要りません。だからこそ、その呼び出しの周りにある判断（各スクリプトの `--help` が説明している内容）をそもそも検査できます。
+テストは `gh` をスタブに差し替えるので（仕組みは各 `.bats` の隣の `helper.bash` にあります）、GitHub には何も届かずトークンも要りません。だからこそ、その呼び出しの周りにある判断（各スクリプトの `--help` が説明している内容）をそもそも検査できます。sync-repo-config.sh については、[setup-script](#setup-script) が届かない部分でもあります。dry run は判定にも書き込みにも進まないため、`--check` の OK / DRIFT / UNKNOWN の判定と適用の経路が動くのはここだけです。
 
 このロジックをワークフローに直接書かず `.github/scripts/` に置いてあるのは、テストから触れるようにするためです。`run:` の中身は囲んでいるワークフローを起動しないと動かせず、この 2 つの場合それは定期実行の検査が落ちるのを待つことを意味します。
 
-[hooks](#hooks) と同じく、[mise.toml](../mise.toml) に足すのは bats だけです。[shellcheck](#shellcheck) と [format](../README.ja.md#書式の統一) はどちらも `git ls-files` で `*.sh` を辿るため、何もしなくてもこのスクリプトを拾います。
+[hooks](#hooks) と同じく、[mise.toml](../mise.toml) に足すのは bats だけです。[shellcheck](#shellcheck) と [format](../README.ja.md#書式の統一) はどちらも `git ls-files` で `*.sh` と `*.bash` を辿るため、何もしなくてもこのスクリプトを拾います。
 
-[hooks](#hooks) のテストと違い、こちらは [cleanup-template.sh](../scripts/cleanup-template.sh) の後も残ります。スクリプトを呼ぶワークフローが残るので、スクリプトとそのテストも残ります。
+[hooks](#hooks) のテストと違い、こちらは [cleanup-template.sh](../scripts/cleanup-template.sh) の後も残ります。ワークフローとセットアップスクリプトが残るので、そのテストも残ります。
 
 ## osv-scanner
 
@@ -387,6 +387,8 @@ git ls-files -z '.github/scripts/tests/*.bats' \
 ```
 
 `fail-on-vuln: false` にしてあります（既定は `true`）。検出は Code scanning にアラートとして出るので、ジョブは落としません。落とすと同じ脆弱性で毎日赤くなり、「対応済み」「様子見」を個別に記録できないためです。アラートは毎回の実行で更新され、直った脆弱性のアラートは自動で閉じます。通知を受け取るにはリポジトリを watch して Code scanning のアラート通知を有効にしておきます。
+
+実行そのものが落ちたとき（脆弱性が見つかったときではなく）は、`notify` ジョブが[設定のずれの検査と同じ仕組み](drift-check.ja.md#落ちたときの通知)で `osv-scanner runs are failing` という issue を `maintenance` ラベル付きで立て、実行が通れば自動的に閉じます。issue なしではこの失敗は見えません。何も見つからなかった走査と走らなかった走査は、Security タブからは同じに見えます。
 
 ### 差分検査（PR 側）
 

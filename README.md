@@ -29,6 +29,7 @@ The rest is reference material to look up when you need it.
 | [.github/rulesets/main.json](.github/rulesets/main.json) | The branch protection definition for main (a GitHub Repository Ruleset) |
 | [scripts/sync-repo-config.sh](scripts/sync-repo-config.sh) | A script that applies and checks the ruleset above together with the repository settings |
 | [scripts/cleanup-template.sh](scripts/cleanup-template.sh) | A script that deletes the files belonging to the template itself ([Removing the template's own files](#removing-the-templates-own-files)) |
+| [scripts/tests/](scripts/tests) | Tests for sync-repo-config.sh, run in CI ([script-tests](docs/ci-jobs.md#script-tests)) |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml) | CI. The gate job `ci` that serves as the required check, plus the check jobs ([list](docs/ci-jobs.md#ci-check-jobs)) |
 | [.github/workflows/osv-scanner.yml](.github/workflows/osv-scanner.yml) | Scheduled scan for known vulnerabilities in dependencies (daily / [osv-scanner](docs/ci-jobs.md#osv-scanner)) |
 | [.github/workflows/repo-settings.yml](.github/workflows/repo-settings.yml) | Scheduled check for drift in repository settings and rulesets (daily / [Settings drift check](docs/drift-check.md#settings-drift-check)) |

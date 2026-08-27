@@ -468,8 +468,10 @@ schedule はリポジトリの活動が 60 日間無いと GitHub 側で自動�
 `publish_results: true` により点数は公開の [Scorecard API](https://scorecard.dev) へ送られ、誰でも `https://scorecard.dev/viewer/?uri=github.com/OWNER/REPO` で見られます。README に出すにはバッジを足します。
 
 ```markdown
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/OWNER/REPO/badge)](https://scorecard.dev/viewer/?uri=github.com/OWNER/REPO)
+[![OpenSSF Scorecard](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.scorecard.dev%2Fprojects%2Fgithub.com%2FOWNER%2FREPO&query=%24.score&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/OWNER/REPO)
 ```
+
+バッジが shields.io の dynamic JSON バッジで API からスコアを直接読んでいるのは、素のバッジエンドポイント（`https://api.scorecard.dev/projects/github.com/OWNER/REPO/badge`）が、廃止された API ホストを参照し続けるバッジへリダイレクトされ、スコアではなくエラーを表示するためです。代償として、スコアの値による色分けはされません。
 
 引き換えに、API は[結果を作るワークフローの書き方を制約します](https://github.com/ossf/scorecard-action#workflow-restrictions)。`analysis` ジョブの step は承認されたアクションの一覧に限られ、ジョブに `env`・コンテナ・サービスを持てません。**このジョブに step を足すと — たとえば mise でツールを入れると — 公開が失敗します**（下の issue で表面化します）。追加のものは別ジョブに置きます。`notify` がまさにそれです。
 

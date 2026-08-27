@@ -468,8 +468,10 @@ By default the package names and versions are sent to [api.osv.dev](https://osv.
 `publish_results: true` sends the score to the public [Scorecard API](https://scorecard.dev), where anyone can view it at `https://scorecard.dev/viewer/?uri=github.com/OWNER/REPO`. To show it in the README, add a badge:
 
 ```markdown
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/OWNER/REPO/badge)](https://scorecard.dev/viewer/?uri=github.com/OWNER/REPO)
+[![OpenSSF Scorecard](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.scorecard.dev%2Fprojects%2Fgithub.com%2FOWNER%2FREPO&query=%24.score&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/OWNER/REPO)
 ```
+
+The badge reads the score from the API through shields.io's dynamic JSON badge, because the plain badge endpoint (`https://api.scorecard.dev/projects/github.com/OWNER/REPO/badge`) redirects to a badge that still queries a retired API host and renders an error instead of the score. The cost is that the score is not colour-coded by value.
 
 In exchange, the API [restricts how the producing workflow may be written](https://github.com/ossf/scorecard-action#workflow-restrictions): the steps of the `analysis` job are limited to an approved list of actions, and the job can carry no `env`, containers, or services. **Adding a step to that job — installing a tool with mise, for example — makes publishing fail** (it surfaces through the issue below). Put anything extra in a separate job; `notify` already is one.
 

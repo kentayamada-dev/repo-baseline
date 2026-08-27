@@ -332,6 +332,8 @@ What the tests are for is the borders, not the obvious cases: a commit that crea
 
 The wiring is tested too, because a hook is only ever reached through [.claude/settings.json](../.claude/settings.json): a script renamed without the setting, a hook registered under an event it does not answer with, and a hook script with no test file of its own each fail the job — none of them would fail a test of the scripts alone.
 
+So is the content of the prompt hook. The Conventional Commits type list is written out in [ci.yml](../.github/workflows/ci.yml) (the `PATTERN` and the failure message beside it), in the tables of both READMEs, and in the prompt hook, and nothing derives one copy from another, so the tests compare each copy against the `PATTERN` — the one the `pr-title` job actually enforces.
+
 The tests for the branch rule create a throwaway repository under the bats temporary directory, so their verdict never depends on the branch the runner happens to be on. `jq` ships with GitHub-hosted runners and is what the hooks themselves call, so bats is the only addition to [mise.toml](../mise.toml).
 
 The tests live under `.claude/` rather than in a `tests/` directory of their own, so that [cleanup-template.sh](../scripts/cleanup-template.sh) takes them out with the hooks they exercise, and so that the repository built from the template keeps the obvious place for its own tests free. `-r` is what keeps this job green afterwards: with no `.bats` file left, bats is never started. Delete the job along with the rest of the leftovers.

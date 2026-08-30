@@ -98,7 +98,7 @@ That enables everything below. Add `--dry-run` if you only want to see what woul
 
 > The script refuses repositories that are not public.
 
-When applying this to an existing repository, a leftover classic branch protection on main applies alongside the ruleset and makes the behavior hard to follow. The script only warns and continues (`--dry-run` does not perform this check), so delete it if it is still there.
+When applying this to an existing repository, a leftover classic branch protection on main applies alongside the ruleset and makes the behavior hard to follow. The script only warns and continues (`--dry-run` and `--check` do not perform this check), so delete it if it is still there.
 
 ```bash
 gh api --method DELETE repos/OWNER/REPO/branches/main/protection

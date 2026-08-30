@@ -98,7 +98,7 @@
 
 > スクリプトは public 以外のリポジトリを拒否します。
 
-既存のリポジトリに適用する場合、main に旧来の branch protection（classic）が残っていると ruleset と併用され、挙動が追いにくくなります。スクリプトは警告を出すだけで続行するので（`--dry-run` ではこの確認を行いません）、残っているなら消してください。
+既存のリポジトリに適用する場合、main に旧来の branch protection（classic）が残っていると ruleset と併用され、挙動が追いにくくなります。スクリプトは警告を出すだけで続行するので（`--dry-run` と `--check` ではこの確認を行いません）、残っているなら消してください。
 
 ```bash
 gh api --method DELETE repos/OWNER/REPO/branches/main/protection

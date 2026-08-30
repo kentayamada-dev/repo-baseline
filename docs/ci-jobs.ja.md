@@ -310,13 +310,13 @@ gitleaks git --redact --verbose --no-banner
 
 ## setup-script
 
-[ci.yml](../.github/workflows/ci.yml) の `setup-script` ジョブが、`scripts/` にある 2 つのスクリプトを `--dry-run` で実際に実行します。[セットアップ](../README.ja.md#セットアップ)のスクリプトと、[テンプレート自身のファイルを削除する](../README.ja.md#テンプレート自身のファイルを削除する)のスクリプトです。[shellcheck](#shellcheck) は静的な検査なので、変数名の取り違えなどは通ってしまいます。どちらを動かすのもリポジトリを作った直後の 1 回だけで、壊れていても気づくのはテンプレートからリポジトリを作った人です。唯一の実行経路を CI で通しておきます。
+[ci.yml](../.github/workflows/ci.yml) の `setup-script` ジョブが、[セットアップ](../README.ja.md#セットアップ)のスクリプトを `--dry-run` で実際に実行します。[shellcheck](#shellcheck) は静的な検査なので、変数名の取り違えなどは通ってしまいます。動かすのはリポジトリを作った直後の 1 回だけで、壊れていても気づくのはテンプレートからリポジトリを作った人です。唯一の実行経路を CI で通しておきます。
 
-`--dry-run` は読み取りだけで完結し、何も変更しません。セットアップスクリプトは送信内容を表示するだけ、削除スクリプトは削除対象を一覧するだけです。`.github/rulesets/*.json` が壊れていればここで落ちるため、ruleset の JSON の構文ミスも PR で捕まります。あわせて両方の `--help` の出力が空でないことも確かめています（ヘルプは各スクリプト冒頭のコメントを awk で切り出しているため、コメントを消すと黙って空になります）。
+`--dry-run` は読み取りだけで完結し、何も変更しません。スクリプトは送信内容を表示するだけです。`.github/rulesets/*.json` が壊れていればここで落ちるため、ruleset の JSON の構文ミスも PR で捕まります。あわせて `--help` の出力が空でないことも確かめています（ヘルプはスクリプト冒頭のコメントを awk で切り出しているため、コメントを消すと黙って空になります）。
 
 `gh` と `jq` は GitHub ホストの runner に最初から入っているため、[mise.toml](../mise.toml) には足していません。認証はワークフローの `GITHUB_TOKEN` で足ります。
 
-private リポジトリではこのジョブを走らせません（セットアップスクリプトが public 以外を拒否するため、回せば必ず落ちます）。スキップは `ci` 側で成功扱いになるので、private でも PR は止まりません。削除スクリプトは private でも動きますが、このテンプレート自体が public 専用なので、独立したジョブを立てるには及びません。
+private リポジトリではこのジョブを走らせません（セットアップスクリプトが public 以外を拒否するため、回せば必ず落ちます）。スキップは `ci` 側で成功扱いになるので、private でも PR は止まりません。
 
 ## hooks
 
@@ -335,24 +335,22 @@ prompt フックは中身も対象です。Conventional Commits の type 一覧�
 
 ブランチ規則のテストは bats の一時ディレクトリに使い捨てのリポジトリを作るため、判定が runner のいるブランチに左右されることはありません。`jq` は GitHub ホストの runner に最初から入っていて、そもそも呼ぶのはフック自身なので、[mise.toml](../mise.toml) に足すのは bats だけです。
 
-テストを独立した `tests/` ではなく `.claude/` の下に置いてあるのは、[cleanup-template.sh](../scripts/cleanup-template.sh) が検査対象のフックごと持っていくようにするためと、テンプレートから作ったリポジトリが自分のテストに一番自然な置き場を空けておくためです。その後もこのジョブが緑のままなのは `-r` のおかげで、`.bats` が 1 つも残らなければ bats は起動しません。ジョブ自体は他の残骸と一緒に削除してください。
+テストを独立した `tests/` ではなく `.claude/` の下に置いてあるのは、フックを削除すればテストも一緒に消えるようにするためと、テンプレートから作ったリポジトリが自分のテストに一番自然な置き場を空けておくためです。その後もこのジョブが緑のままなのは `-r` のおかげで、`.bats` が 1 つも残らなければ bats は起動しません。フックを手放すなら、ジョブ自体もフックと一緒に削除してください。
 
 ## script-tests
 
-[ci.yml](../.github/workflows/ci.yml) の `script-tests` ジョブが、2 つの置き場にある [bats](https://bats-core.readthedocs.io/) のテストで、それぞれ隣にあるスクリプトを検査します。[.github/scripts/tests/](../.github/scripts/tests) は 1 つ上の [.github/scripts/](../.github/scripts) を検査します。定期実行のワークフローが、落ちた検査を issue として報告し、通ったら取り下げるために呼ぶ 2 つです。[scripts/tests/](../scripts/tests) は [scripts/](../scripts) の 2 つを検査します。[設定のずれの検査](drift-check.ja.md#設定のずれの検査)が OK / DRIFT / UNKNOWN の判定を頼っている [sync-repo-config.sh](../scripts/sync-repo-config.sh) と、ファイルを削除し一度しか走らない [cleanup-template.sh](../scripts/cleanup-template.sh) です。
+[ci.yml](../.github/workflows/ci.yml) の `script-tests` ジョブが、2 つの置き場にある [bats](https://bats-core.readthedocs.io/) のテストで、それぞれ隣にあるスクリプトを検査します。[.github/scripts/tests/](../.github/scripts/tests) は 1 つ上の [.github/scripts/](../.github/scripts) を検査します。定期実行のワークフローが、落ちた検査を issue として報告し、通ったら取り下げるために呼ぶ 2 つです。[scripts/tests/](../scripts/tests) は [scripts/](../scripts) にある [sync-repo-config.sh](../scripts/sync-repo-config.sh) を検査します。[設定のずれの検査](drift-check.ja.md#設定のずれの検査)が OK / DRIFT / UNKNOWN の判定を頼っているスクリプトです。
 
 ```bash
 git ls-files -z '.github/scripts/tests/*.bats' 'scripts/tests/*.bats' \
   | xargs -0 -r bats --print-output-on-failure
 ```
 
-GitHub を呼ぶスクリプトのテストは `gh` をスタブに差し替えるので（仕組みは隣の `helper.bash` にあります）、GitHub には何も届かずトークンも要りません。だからこそ、その呼び出しの周りにある判断（各スクリプトの `--help` が説明している内容）をそもそも検査できます。cleanup-template.sh は API を呼ばないので、そのテストは代わりに使い捨ての git リポジトリの中で実行します。いずれにせよこのジョブが動かすのは [setup-script](#setup-script) が届かない部分です。dry run は判定にも書き込みにも進まないため、`--check` の OK / DRIFT / UNKNOWN の判定と適用の経路、そして削除そのものが動くのはここだけです。
+テストは `gh` をスタブに差し替えるので（仕組みは隣の `helper.bash` にあります）、GitHub には何も届かずトークンも要りません。だからこそ、その呼び出しの周りにある判断（各スクリプトの `--help` が説明している内容）をそもそも検査できます。このジョブが動かすのは [setup-script](#setup-script) が届かない部分です。dry run は判定にも書き込みにも進まないため、`--check` の OK / DRIFT / UNKNOWN の判定と適用の経路が動くのはここだけです。
 
 このロジックをワークフローに直接書かず `.github/scripts/` に置いてあるのは、テストから触れるようにするためです。`run:` の中身は囲んでいるワークフローを起動しないと動かせず、この 2 つの場合それは定期実行の検査が落ちるのを待つことを意味します。
 
 [hooks](#hooks) と同じく、[mise.toml](../mise.toml) に足すのは bats だけです。[shellcheck](#shellcheck) と [format](../README.ja.md#書式の統一) はどちらも `git ls-files` で `*.sh` と `*.bash` を辿るため、何もしなくてもこのスクリプトを拾います。
-
-[hooks](#hooks) のテストと違い、こちらは [cleanup-template.sh](../scripts/cleanup-template.sh) の後も残ります。ワークフローとセットアップスクリプトが残るので、そのテストも残ります。唯一の例外は cleanup-template.sh 自身のテストで、スクリプトが自分と一緒に削除します。
 
 ## osv-scanner
 

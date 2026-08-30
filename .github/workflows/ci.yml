@@ -275,16 +275,11 @@ jobs:
         with:
           persist-credentials: false
       - name: Check --help output
-        run: |
-          set -euo pipefail
-          test -n "$(./scripts/sync-repo-config.sh --help)"
-          test -n "$(./scripts/cleanup-template.sh --help)"
+        run: test -n "$(./scripts/sync-repo-config.sh --help)"
       - name: Dry-run the setup script
         env:
           GH_TOKEN: ${{ github.token }}
         run: ./scripts/sync-repo-config.sh --dry-run
-      - name: Dry-run the cleanup script
-        run: ./scripts/cleanup-template.sh --dry-run
 
   hooks:
     runs-on: ubuntu-24.04-arm

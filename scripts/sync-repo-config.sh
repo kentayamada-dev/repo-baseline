@@ -611,10 +611,3 @@ fi
 gh api "repos/${REPO}/actions/permissions/workflow" --jq '
   "  Actions perms   : GITHUB_TOKEN is \(.default_workflow_permissions) / creating and approving PRs is \(if .can_approve_pull_request_reviews then "allowed" else "forbidden" end)"
 '
-
-# The other half of the one-time setup. It deletes itself once run, so the hint goes
-# away with it and is never shown to someone who has nothing left to clean up.
-if [[ -f "${repo_root}/scripts/cleanup-template.sh" ]]; then
-  echo
-  echo "next: ./scripts/cleanup-template.sh deletes the files that belong to the template itself"
-fi

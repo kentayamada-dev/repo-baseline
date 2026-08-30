@@ -30,8 +30,7 @@ The rest is reference material to look up when you need it.
 | --- | --- |
 | [.github/rulesets/main.json](.github/rulesets/main.json) | The branch protection definition for main (a GitHub Repository Ruleset) |
 | [scripts/sync-repo-config.sh](scripts/sync-repo-config.sh) | A script that applies and checks the ruleset above together with the repository settings |
-| [scripts/cleanup-template.sh](scripts/cleanup-template.sh) | A script that deletes the files belonging to the template itself ([Removing the template's own files](#removing-the-templates-own-files)) |
-| [scripts/tests/](scripts/tests) | Tests for the two scripts above, run in CI ([script-tests](docs/ci-jobs.md#script-tests)) |
+| [scripts/tests/](scripts/tests) | Tests for the script above, run in CI ([script-tests](docs/ci-jobs.md#script-tests)) |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml) | CI. The gate job `ci` that serves as the required check, plus the check jobs ([list](docs/ci-jobs.md#ci-check-jobs)) |
 | [.github/workflows/osv-scanner.yml](.github/workflows/osv-scanner.yml) | Scheduled scan for known vulnerabilities in dependencies (daily / [osv-scanner](docs/ci-jobs.md#osv-scanner)) |
 | [.github/workflows/scorecard.yml](.github/workflows/scorecard.yml) | Scheduled scoring of the repository's security posture with OpenSSF Scorecard (weekly / [Scorecard](docs/ci-jobs.md#scorecard)) |
@@ -74,7 +73,6 @@ One-time work to do right after creating your own repository from the template.
 2. **Commit the [config.yml](.github/ISSUE_TEMPLATE/config.yml) the script rewrote** ([Issue templates](#issue-templates))
 3. **Register the `SETTINGS_TOKEN` secret** ([how to create it](docs/drift-check.md#creating-settings_token)) — without it the [settings drift check](docs/drift-check.md#settings-drift-check) fails with "UNKNOWN" and opens an issue
 4. **If you use [Renovate](docs/renovate.md#renovate), register the `RENOVATE_TOKEN` secret** ([how to create it](docs/renovate.md#registering-the-token)) — without it the Monday scheduled run fails and opens an issue
-5. **Delete the files that belong to the template** ([Removing the template's own files](#removing-the-templates-own-files))
 
 Prerequisites: [gh](https://cli.github.com/) and [jq](https://jqlang.github.io/jq/), with `gh auth login` already done.
 
@@ -126,16 +124,6 @@ There is a single ruleset, [main.json](.github/rulesets/main.json), and it targe
 Signed commits are not required. The rule reads every commit in the pull request, not just the squash commit GitHub creates and signs on merge, so it would block Renovate's update PRs, whose commits are unsigned.
 
 Zero approvals assumes a single maintainer. Once two or more people work on the repository, change the `pull_request` rule in the JSON: `required_approving_review_count` to 1, and `dismiss_stale_reviews_on_push` and `require_last_push_approval` to `true`. To require a review from the owner of the area that changed, add a `CODEOWNERS` file and turn on `require_code_owner_review` as well.
-
-### Removing the template's own files
-
-The documentation describing the template, the Claude Code settings and the community documents belong to this repository rather than yours. The script below lists them, deletes them once you confirm, and deletes itself last. The setup script points at it when it finishes.
-
-```bash
-./scripts/cleanup-template.sh
-```
-
-The options and the details (what stays, the README stub, why LICENSE is kept) are in `--help`, and the run ends by printing the next steps, including how to land the deletions through a PR.
 
 ## Development flow
 

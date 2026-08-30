@@ -310,13 +310,13 @@ Excluding a false positive (a dummy value used in a test, for example) is done w
 
 ## setup-script
 
-The `setup-script` job in [ci.yml](../.github/workflows/ci.yml) actually runs both of the scripts under `scripts/` with `--dry-run`: the one from [Setup](../README.md#setup) and the one from [Removing the template's own files](../README.md#removing-the-templates-own-files). [shellcheck](#shellcheck) is a static check, so a mistyped variable name passes it. Each script is run exactly once, right after the repository is created, and if one is broken the person who finds out is whoever created a repository from the template. Their one and only execution path is exercised in CI.
+The `setup-script` job in [ci.yml](../.github/workflows/ci.yml) actually runs the script from [Setup](../README.md#setup) with `--dry-run`. [shellcheck](#shellcheck) is a static check, so a mistyped variable name passes it. The script is run exactly once, right after the repository is created, and if it is broken the person who finds out is whoever created a repository from the template. Its one and only execution path is exercised in CI.
 
-`--dry-run` is read-only and changes nothing: the setup script only prints what it would send, and the cleanup script only lists the files it would delete. A broken `.github/rulesets/*.json` fails here, so a JSON syntax error in a ruleset is caught on the PR as well. The job also confirms that neither `--help` output is empty (the help is carved out of the comment at the top of each script with awk, so removing the comment silently empties it).
+`--dry-run` is read-only and changes nothing: the script only prints what it would send. A broken `.github/rulesets/*.json` fails here, so a JSON syntax error in a ruleset is caught on the PR as well. The job also confirms that the `--help` output is not empty (the help is carved out of the comment at the top of the script with awk, so removing the comment silently empties it).
 
 `gh` and `jq` ship with GitHub-hosted runners, so they are not added to [mise.toml](../mise.toml). The workflow's `GITHUB_TOKEN` is enough for authentication.
 
-This job does not run on a private repository (the setup script refuses anything but public, so running it would always fail). A skip counts as a success in `ci`, so PRs are not blocked on a private repository either. The cleanup script would run there, but the template is for public repositories only, so it is not worth a job of its own.
+This job does not run on a private repository (the setup script refuses anything but public, so running it would always fail). A skip counts as a success in `ci`, so PRs are not blocked on a private repository either.
 
 ## hooks
 
@@ -335,24 +335,22 @@ So is the content of the prompt hook. The Conventional Commits type list is writ
 
 The tests for the branch rule create a throwaway repository under the bats temporary directory, so their verdict never depends on the branch the runner happens to be on. `jq` ships with GitHub-hosted runners and is what the hooks themselves call, so bats is the only addition to [mise.toml](../mise.toml).
 
-The tests live under `.claude/` rather than in a `tests/` directory of their own, so that [cleanup-template.sh](../scripts/cleanup-template.sh) takes them out with the hooks they exercise, and so that the repository built from the template keeps the obvious place for its own tests free. `-r` is what keeps this job green afterwards: with no `.bats` file left, bats is never started. Delete the job along with the rest of the leftovers.
+The tests live under `.claude/` rather than in a `tests/` directory of their own, so that deleting the hooks takes their tests out with them, and so that the repository built from the template keeps the obvious place for its own tests free. `-r` is what keeps this job green afterwards: with no `.bats` file left, bats is never started. Delete the job along with the hooks if you drop them.
 
 ## script-tests
 
-The `script-tests` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in two directories, each against the scripts next to them. [.github/scripts/tests/](../.github/scripts/tests) covers [.github/scripts/](../.github/scripts) — the two the scheduled workflows call to report a failing check as an issue and to retract it once the check passes. [scripts/tests/](../scripts/tests) covers the two scripts in [scripts/](../scripts): [sync-repo-config.sh](../scripts/sync-repo-config.sh) — the script whose OK / DRIFT / UNKNOWN verdicts the [settings drift check](drift-check.md#settings-drift-check) relies on — and [cleanup-template.sh](../scripts/cleanup-template.sh), which deletes files and runs once.
+The `script-tests` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in two directories, each against the scripts next to them. [.github/scripts/tests/](../.github/scripts/tests) covers [.github/scripts/](../.github/scripts) — the two the scheduled workflows call to report a failing check as an issue and to retract it once the check passes. [scripts/tests/](../scripts/tests) covers [sync-repo-config.sh](../scripts/sync-repo-config.sh) in [scripts/](../scripts) — the script whose OK / DRIFT / UNKNOWN verdicts the [settings drift check](drift-check.md#settings-drift-check) relies on.
 
 ```bash
 git ls-files -z '.github/scripts/tests/*.bats' 'scripts/tests/*.bats' \
   | xargs -0 -r bats --print-output-on-failure
 ```
 
-The tests around scripts that call GitHub replace `gh` with a stub (the `helper.bash` next to them explains how), so nothing reaches GitHub and no token is needed — which is what makes the decisions around those calls (the ones each script's `--help` describes) testable at all. cleanup-template.sh calls no API; its tests run it against a throwaway git repository instead. Either way this job reaches what [setup-script](#setup-script) cannot: a dry run stops before any verdict or write, so the OK / DRIFT / UNKNOWN classification of `--check`, the apply path, and the deletions themselves are only exercised here.
+The tests replace `gh` with a stub (the `helper.bash` next to them explains how), so nothing reaches GitHub and no token is needed — which is what makes the decisions around those calls (the ones each script's `--help` describes) testable at all. This job reaches what [setup-script](#setup-script) cannot: a dry run stops before any verdict or write, so the OK / DRIFT / UNKNOWN classification of `--check` and the apply path are only exercised here.
 
 Being reachable by a test is the reason this logic sits in `.github/scripts/` rather than inline in the workflows. A `run:` block can only be exercised by triggering the workflow around it, and for these that means waiting for a scheduled check to fail.
 
 As with [hooks](#hooks), bats is the only addition to [mise.toml](../mise.toml). [shellcheck](#shellcheck) and [format](../README.md#consistent-formatting) pick the scripts up without being told, because both walk `git ls-files` over `*.sh` and `*.bash`.
-
-Unlike the [hooks](#hooks) tests, these stay behind [cleanup-template.sh](../scripts/cleanup-template.sh): the workflows and the setup script stay, so their tests do too. The one exception is cleanup-template.sh's own test, which the script deletes along with itself.
 
 ## osv-scanner
 

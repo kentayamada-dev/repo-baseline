@@ -30,8 +30,7 @@
 | --- | --- |
 | [.github/rulesets/main.json](.github/rulesets/main.json) | main のブランチ保護（GitHub Repository Ruleset）の定義 |
 | [scripts/sync-repo-config.sh](scripts/sync-repo-config.sh) | 上記 ruleset とリポジトリ設定をまとめて適用・検査するスクリプト |
-| [scripts/cleanup-template.sh](scripts/cleanup-template.sh) | テンプレート自身に属するファイルを削除するスクリプト（[テンプレート自身のファイルを削除する](#テンプレート自身のファイルを削除する)） |
-| [scripts/tests/](scripts/tests) | 上記 2 スクリプトのテスト。CI で実行される（[script-tests](docs/ci-jobs.ja.md#script-tests)） |
+| [scripts/tests/](scripts/tests) | 上記スクリプトのテスト。CI で実行される（[script-tests](docs/ci-jobs.ja.md#script-tests)） |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml) | CI。必須チェックとなるゲートジョブ `ci` と検査ジョブ（[一覧](docs/ci-jobs.ja.md#ci-の検査ジョブ)） |
 | [.github/workflows/osv-scanner.yml](.github/workflows/osv-scanner.yml) | 依存パッケージの既知の脆弱性の定期検査（毎日 / [osv-scanner](docs/ci-jobs.ja.md#osv-scanner)） |
 | [.github/workflows/scorecard.yml](.github/workflows/scorecard.yml) | OpenSSF Scorecard によるリポジトリのセキュリティ体制の定期採点（毎週 / [Scorecard](docs/ci-jobs.ja.md#scorecard)） |
@@ -74,7 +73,6 @@
 2. **スクリプトが書き換えた [config.yml](.github/ISSUE_TEMPLATE/config.yml) をコミットする**（[issue のテンプレート](#issue-のテンプレート)）
 3. **secret `SETTINGS_TOKEN` を登録する**（[作成手順](docs/drift-check.ja.md#settings_token-の作成)） — 未登録だと[設定のずれの検査](docs/drift-check.ja.md#設定のずれの検査)が `UNKNOWN` で落ちて issue が立ちます
 4. **[Renovate](docs/renovate.ja.md#renovate) を使うなら secret `RENOVATE_TOKEN` を登録する**（[作成手順](docs/renovate.ja.md#トークンの登録)） — 未登録だと月曜の定期実行が落ちて issue が立ちます
-5. **テンプレートに属するファイルを削除する**（[テンプレート自身のファイルを削除する](#テンプレート自身のファイルを削除する)）
 
 前提: [gh](https://cli.github.com/) と [jq](https://jqlang.github.io/jq/)、および `gh auth login` 済みであること。
 
@@ -126,16 +124,6 @@ ruleset は [main.json](.github/rulesets/main.json) の 1 つで、対象は `ma
 コミットの署名は必須にしていません。ルールが見るのはマージ時に GitHub が作って署名する squash コミットだけでなく PR に含まれるすべてのコミットなので、必須にすると未署名のコミットで作られる Renovate の更新 PR がマージできなくなるためです。
 
 承認 0 人は、管理者が 1 人であることを前提にした設定です。2 人以上で開発するようになったら JSON の `pull_request` ルールを変えてください。`required_approving_review_count` を 1 に、`dismiss_stale_reviews_on_push` と `require_last_push_approval` を `true` にします。変更箇所の担当者のレビューを必須にするなら、`CODEOWNERS` を置いて `require_code_owner_review` も有効にします。
-
-### テンプレート自身のファイルを削除する
-
-テンプレートを説明するドキュメント、Claude Code の設定、コミュニティ文書は、あなたのリポジトリではなくこのリポジトリに属するものです。下のスクリプトはそれらを一覧表示し、確認を取ってから削除し、最後に自分自身を削除します。セットアップスクリプトは実行の最後にこのスクリプトを案内します。
-
-```bash
-./scripts/cleanup-template.sh
-```
-
-オプションと詳細（何が残るか、README の雛形、LICENSE を残す理由）は `--help` にあり、実行の最後には削除を PR で取り込む手順を含む「次にやること」が表示されます。
 
 ## 開発フロー
 

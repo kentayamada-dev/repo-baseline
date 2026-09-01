@@ -91,9 +91,6 @@
           "mode": "deny"
         }
       ]
-    },
-    "network": {
-      "strictAllowlist": true
     }
   }
 }

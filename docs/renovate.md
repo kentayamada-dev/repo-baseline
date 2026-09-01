@@ -96,6 +96,7 @@ The whole phrase is carried in `commitMessageTopic`, with `commitMessageAction` 
 | Digest only | `chore(deps): update renovate/renovate digest to e49d149` |
 | Pinning a version (such as the first run with `pinDigests: true`) | `chore(deps): pin dependency versions` |
 | Replacement (when `replacements:all` picks one up) | `chore(deps): replace old with new` |
+| Rollback (when a pinned version disappears upstream) | `chore(deps): roll actions/checkout back to v7.0.1` |
 
 The `chore(deps):` prefix comes from `semanticCommits: 'enabled'` (a preset included in `config:recommended` makes it `fix(deps):` for the application's own dependencies). The shape of the prefix is unchanged, so CI's [`pr-title`](../README.md#pr-title-format) passes.
 

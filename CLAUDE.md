@@ -21,6 +21,7 @@ A template repository providing groundwork for repository operations: branch pro
 - Never force-push or hard-reset: pushed history and uncommitted work must survive (prefer git stash or a soft reset)
 - Before committing, fetch and integrate the latest remote main, then create a working branch from it
 - Write commit messages and PR titles/bodies in English (on squash the PR title becomes, verbatim, the commit title on main, and the messages are concatenated into its body)
+- Pass commit messages and PR bodies via a file (`git commit -F`, `gh pr create --body-file`), not inline: prose that quotes a guarded command inside a command string trips the deny hooks
 
 ## References
 

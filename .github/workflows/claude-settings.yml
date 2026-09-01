@@ -4,10 +4,9 @@ on:
   schedule:
     - cron: '30 22 * * *'
   workflow_dispatch:
-  # The schema lives on SchemaStore and changes without a commit here, so this
-  # check cannot be a ci job (docs/ci-jobs.md#scheduled-claude-code-settings-check).
-  # Run it on pushes to main too, so a bad edit surfaces right after the merge
-  # instead of at the next scheduled run.
+  # Run on pushes to main too, so a bad edit surfaces right after the merge
+  # instead of at the next scheduled run. Why this is not a ci job:
+  # docs/ci-jobs.md#scheduled-claude-code-settings-check
   push:
     branches: [main]
 

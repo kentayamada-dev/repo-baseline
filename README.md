@@ -36,6 +36,7 @@ The rest is reference material to look up when you need it.
 | [.github/workflows/scorecard.yml](.github/workflows/scorecard.yml) | Scheduled scoring of the repository's security posture with OpenSSF Scorecard (weekly / [Scorecard](docs/ci-jobs.md#scorecard)) |
 | [.github/workflows/repo-settings.yml](.github/workflows/repo-settings.yml) | Scheduled check for drift in repository settings and rulesets (daily / [Settings drift check](docs/drift-check.md#settings-drift-check)) |
 | [.github/workflows/link-check.yml](.github/workflows/link-check.yml) | Scheduled check of the external links in the documentation (daily / [Scheduled external link checks](docs/ci-jobs.md#scheduled-external-link-checks)) |
+| [.github/workflows/claude-settings.yml](.github/workflows/claude-settings.yml) | Scheduled validation of the Claude Code settings against their schema (daily / [Scheduled Claude Code settings check](docs/ci-jobs.md#scheduled-claude-code-settings-check)) |
 | [.github/workflows/renovate.yml](.github/workflows/renovate.yml) | Runs Renovate ([The update list issue](docs/renovate.md#the-update-list-issue)) |
 | [.github/scripts/](.github/scripts) | The scripts the scheduled workflows above call to report a failing check as an issue and to retract it |
 | [.github/scripts/tests/](.github/scripts/tests) | Tests for the scripts above, run in CI ([script-tests](docs/ci-jobs.md#script-tests)) |

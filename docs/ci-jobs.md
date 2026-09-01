@@ -25,7 +25,7 @@ The list of check jobs present in [ci.yml](../.github/workflows/ci.yml) in the i
 | `renovate-config` | Validation of the Renovate configuration | [Validating the configuration](renovate.md#validating-the-configuration) |
 | `osv-scanner-diff` | Vulnerabilities in dependencies the PR newly introduces | [osv-scanner](#osv-scanner) |
 
-Checks whose result can change without any code change (the [settings drift check](drift-check.md#settings-drift-check), the full scan in [osv-scanner](#osv-scanner), the [external link check](#scheduled-external-link-checks), [Scorecard](#scorecard)) would stop unrelated PRs if they were part of `ci`, so they are scheduled runs in separate workflows.
+Checks whose result can change without any code change (the [settings drift check](drift-check.md#settings-drift-check), the full scan in [osv-scanner](#osv-scanner), the [external link check](#scheduled-external-link-checks), the [Claude Code settings check](#scheduled-claude-code-settings-check), [Scorecard](#scorecard)) would stop unrelated PRs if they were part of `ci`, so they are scheduled runs in separate workflows.
 
 ## Adding a job to CI
 
@@ -336,6 +336,18 @@ So is the content of the prompt hook. The Conventional Commits type list is writ
 The tests for the branch rule create a throwaway repository under the bats temporary directory, so their verdict never depends on the branch the runner happens to be on. `jq` ships with GitHub-hosted runners and is what the hooks themselves call, so bats is the only addition to [mise.toml](../mise.toml).
 
 The tests live under `.claude/` rather than in a `tests/` directory of their own, so that deleting the hooks takes their tests out with them, and so that the repository built from the template keeps the obvious place for its own tests free. `-r` is what keeps this job green afterwards: with no `.bats` file left, bats is never started. Delete the job along with the hooks if you drop them.
+
+## Scheduled Claude Code settings check
+
+[claude-settings.yml](../.github/workflows/claude-settings.yml) validates [.claude/settings.json](../.claude/settings.json) against the Claude Code settings schema from [SchemaStore](https://www.schemastore.org/), using [check-jsonschema](https://github.com/python-jsonschema/check-jsonschema) like the [issue-forms](../README.md#issue-templates) job. Claude Code ignores keys it does not recognize, so a misspelled key fails nothing at run time — the behavior the key was meant to configure is just silently absent. Validation is the only thing that notices.
+
+Two limits shape the job. This schema is not bundled with check-jsonschema, so it is fetched from SchemaStore at run time, and its content follows Claude Code releases — the result can change without any code change here, which is why this is a scheduled run and not a `ci` job. And the schema tolerates unknown top-level keys (`additionalProperties` is `false` only inside nested blocks such as `sandbox` and `permissions`), so a top-level typo still passes.
+
+```bash
+check-jsonschema --schemafile https://json.schemastore.org/claude-code-settings.json .claude/settings.json
+```
+
+Failure notification uses [the same mechanism as the settings drift check](drift-check.md#notification-on-failure). An issue titled `The Claude Code settings do not match the schema` is opened with the `maintenance` label, and once a run passes it closes automatically. Being a scheduled run, it also [stops when there is no activity](#when-the-scheduled-run-stops). Delete the workflow along with the hooks and settings if you drop `.claude/`.
 
 ## script-tests
 

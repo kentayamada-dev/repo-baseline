@@ -7,7 +7,7 @@
   },
   "permissions": {
     "allow": [
-      "Bash(git status)",
+      "Bash(git status *)",
       "Bash(git diff *)",
       "Bash(git log *)",
       "Bash(git show *)",
@@ -25,8 +25,16 @@
     "deny": [
       "Bash(git push --force*)",
       "Bash(git push -f*)",
-      "Bash(git reset --hard*)"
-    ]
+      "Bash(git reset --hard*)",
+      "Bash(git clean*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)"
+    ],
+    "disableBypassPermissionsMode": "disable"
   },
   "hooks": {
     "PreToolUse": [
@@ -40,6 +48,10 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-commit-on-main.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-force-push-hard-reset.sh"
           },
           {
             "type": "prompt",
@@ -60,5 +72,28 @@
         ]
       }
     ]
+  },
+  "env": {
+    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1"
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "credentials": {
+      "files": [
+        {
+          "path": "~/.aws",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.ssh",
+          "mode": "deny"
+        }
+      ]
+    },
+    "network": {
+      "strictAllowlist": true
+    }
   }
 }

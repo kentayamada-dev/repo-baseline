@@ -32,12 +32,11 @@ jobs:
           GH_TOKEN: ${{ secrets.SETTINGS_TOKEN || github.token }}
         run: |
           set -eo pipefail
-          # The output goes into the issue body too. pipefail is set above because
-          # otherwise tee's exit code hides a failed check.
+          # The output goes into the issue body too. Why pipefail:
+          # docs/drift-check.md#notification-on-failure
           ./scripts/sync-repo-config.sh --check 2>&1 | tee "${RUNNER_TEMP}/check.log"
 
-      # steps.check.outcome is part of the condition so that a failure in another
-      # step, such as checkout, does not open a bogus "settings have drifted" issue.
+      # Why steps.check.outcome: docs/drift-check.md#notification-on-failure
       - name: Report the drift as an issue
         if: failure() && steps.check.outcome == 'failure'
         env:

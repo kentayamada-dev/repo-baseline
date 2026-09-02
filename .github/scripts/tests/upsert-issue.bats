@@ -56,8 +56,6 @@ upsert() {
   assert_gh_called 'issue edit https://github.com/owner/repo/issues/7 --add-label maintenance'
 }
 
-# The issue matters more than the label, so a label that has been deleted since is
-# reported and left at that.
 @test "warns instead of failing when the label cannot be added" {
   GH_ADD_LABEL_FAILS=true run -0 upsert skip
   [[ "${output}" == *"::warning::"*"maintenance label"* ]]

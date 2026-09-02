@@ -23,7 +23,7 @@ ruleset で突き合わせるのは定義に書いた項目だけです。API �
 
 期待値は[スクリプト](../scripts/sync-repo-config.sh)の `REPO_SETTINGS_EXPECTED` / `REPO_SETTINGS_ENDPOINTS` / `SECURITY_ANALYSIS_EXPECTED` / `ACTIONS_WORKFLOW_EXPECTED` / `LABELS_EXPECTED` にあり、適用と確認の両方がそこを読むため、片方だけ直って食い違うことは起きません。設定を増やすときもここに 1 行足すだけで、`--check` と `--dry-run` の対象に自動的に入ります。
 
-`REPO_SETTINGS=false` を付けた場合、リポジトリ設定の確認は飛ばして ruleset だけを見ます。ずれていたら、引数なしで実行すれば適用されます。
+ずれていたら、引数なしで実行すれば適用されます。
 
 ```bash
 ./scripts/sync-repo-config.sh
@@ -37,9 +37,11 @@ issue は `Repository settings have drifted` というタイトルで `maintenan
 
 issue の作成・コメント・close はワークフローの `GITHUB_TOKEN`（`issues: write`）で行います。`SETTINGS_TOKEN` は読み取り専用のままで構いません。
 
+他の定期実行ワークフローも同じ方法で報告し、報告のステップは共通の形をしています（各ファイルはコメントでここを指すだけです）。出力を `tee` に通す検査は `pipefail` を設定します。無いと tee の終了コードが検査の失敗を隠すためです。issue を立てるステップは `steps.check.outcome` も条件に含め、checkout など別のステップの失敗で誤った issue が立たないようにしています。報告が独立した `notify` ジョブのもの（[osv-scanner](ci-jobs.ja.md#osv-scanner)、[Scorecard](ci-jobs.ja.md#scorecard)、[Renovate](renovate.ja.md#実行が失敗したとき)）では、そのジョブを `!cancelled()` で動かして見る対象のジョブが落ちても実行し、報告を行うスクリプトがリポジトリにあるため checkout し、cancelled のように成功でも失敗でもない結果では何もしません。
+
 ## トークンについて
 
-**既定の `GITHUB_TOKEN` では immutable releases と Dependabot alerts、secret scanning の push protection、Actions の既定権限を読めず、`UNKNOWN` になります**。Actions から実行するには、Administration の read を持つ fine-grained PAT を secret `SETTINGS_TOKEN` に登録してください。登録があればワークフローはそちらを使います。
+**既定の `GITHUB_TOKEN` では検査項目のすべては読めず**（どの項目に何が要るかは下の表）、読めないものは `UNKNOWN` になります。Actions から実行するには、fine-grained PAT を secret `SETTINGS_TOKEN` に登録してください。登録があればワークフローはそちらを使います。
 
 ```bash
 gh secret set SETTINGS_TOKEN

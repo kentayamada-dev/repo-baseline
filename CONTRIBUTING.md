@@ -6,8 +6,7 @@ This page summarizes the entry points for contributing. The details of each proc
 
 | Topic | Where |
 | --- | --- |
-| Something behaves incorrectly or raises an error | [Bug report issue](.github/ISSUE_TEMPLATE/bug_report.yml) |
-| A feature to add or work that needs doing | [Task issue](.github/ISSUE_TEMPLATE/task.yml) |
+| A bug, or a feature or piece of work to do | An issue through the matching [template](.github/ISSUE_TEMPLATE) |
 | Questions, direction discussions, or anything you cannot classify as a bug or a request | Discussions (there is a link on the issue creation page) |
 | A security problem | [SECURITY.md](SECURITY.md) (**do not write it in an issue**) |
 

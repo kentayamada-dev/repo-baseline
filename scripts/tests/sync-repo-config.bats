@@ -64,8 +64,6 @@ setup() {
   [[ "${output}" == *SETTINGS_TOKEN* ]]
 }
 
-# The endpoint answers 404 both for "disabled" and for "not allowed to read", and
-# only admin access lets the check call it drift (docs/drift-check.md).
 @test "a 404 on vulnerability-alerts is DRIFT with admin access, UNKNOWN without" {
   fail_endpoint repos/owner/repo/vulnerability-alerts 1 'HTTP 404: Not Found'
   run -1 run_sync --check
@@ -96,7 +94,6 @@ setup() {
   [[ "${output}" == *'unexpected rule creation'* ]]
 }
 
-# The API promises no order for rules, so a reordering must not read as drift.
 @test "--check is indifferent to the order the API returns rules in" {
   edit_fixture repos/owner/repo/rulesets/1 '.rules |= reverse'
   run -0 run_sync --check
@@ -165,8 +162,6 @@ setup() {
   [[ "${output}" == *'classic branch protection'* ]]
 }
 
-# The two traps: a run that dies midway must say the application is partial, and
-# must still demand the commit for the config.yml it already rewrote.
 @test "a failure midway reports the partial application and the pending rewrite" {
   fail_endpoint repos/owner/repo/immutable-releases 1
   run -1 run_sync

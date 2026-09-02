@@ -1,7 +1,5 @@
 #!/usr/bin/env bats
 
-# The paths below are rooted at the project directory the helper exports, since
-# that is what the hook measures a path against.
 setup() {
   load helper
 }

@@ -33,8 +33,6 @@ setup() {
   assert_gh_not_called 'issue close'
 }
 
-# Two issues under one title is not what the workflows aim for, but a race between
-# runs can leave that behind, and a leftover open issue would never close again.
 @test "closes every issue that carries the title" {
   open_issue 12 'External links are broken' 13 'External links are broken'
   run -0 run_script close-issues-by-title.sh 'External links are broken' 'the check passed'

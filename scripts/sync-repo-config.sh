@@ -20,7 +20,8 @@
 # Environment variables:
 #   REPO           target repository (default: derived from the origin remote)
 #   RULESET_FILE   apply only one ruleset JSON (default: apply all of .github/rulesets/*.json)
-#   REPO_SETTINGS  set to false to skip changing repository settings (default: true)
+#   REPO_SETTINGS  set to false to skip the repository settings and handle only the
+#                  rulesets (applies to --dry-run and --check too; default: true)
 #
 set -euo pipefail
 

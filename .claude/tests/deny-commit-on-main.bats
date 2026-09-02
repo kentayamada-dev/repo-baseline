@@ -1,8 +1,7 @@
 #!/usr/bin/env bats
 
-# The hook reads the branch of the checkout it runs in, so each test gets a
-# throwaway repository. An unborn HEAD still reports its branch name, which is
-# why no commit is needed here.
+# An unborn HEAD still reports its branch name, so the throwaway repository
+# needs no commit.
 setup() {
   load helper
   git init -q -b main "${BATS_TEST_TMPDIR}/repo"
@@ -58,9 +57,6 @@ assert_decision() {
   assert_decision deny 'git commit -m x && git switch -c feat'
 }
 
-# The branch flag has to stand on its own to be read as one, so this branch is
-# created and the commit denied all the same. Writing it as -c feat is the way
-# through.
 @test "denies a commit behind a branch flag stuck to its value" {
   assert_decision deny 'git switch -cfeat && git commit -m x'
 }
@@ -87,8 +83,6 @@ assert_decision() {
   assert_decision '' 'git commit -m "message"'
 }
 
-# The hook fails closed: on main, a tool call it cannot read is denied rather
-# than waved through.
 @test "denies on main when the tool call carries no command" {
   assert_answer deny-commit-on-main.sh '{}' .hookSpecificOutput.permissionDecision deny
 }
@@ -102,8 +96,6 @@ assert_decision() {
   assert_answer deny-commit-on-main.sh 'not json' .hookSpecificOutput.permissionDecision deny
 }
 
-# Off main there is nothing for this hook to protect, so failing closed does
-# not reach there: even an unreadable tool call passes.
 @test "stays silent off main even for an unreadable tool call" {
   git switch -q -c feat
   assert_answer deny-commit-on-main.sh 'not json' .hookSpecificOutput.permissionDecision ''

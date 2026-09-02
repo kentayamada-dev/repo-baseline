@@ -137,14 +137,7 @@ How the shell checks divide up: **`run:` inside a workflow is covered by actionl
 
 ## shellcheck
 
-The `shellcheck` job in [ci.yml](../.github/workflows/ci.yml) checks the `*.sh` / `*.bash` files under git. Unquoted variable expansions, unintended word splitting, comparisons that are always true — the kind of flaw that raises no error and misbehaves silently. It does not look at formatting (indentation and so on); that is the job of shfmt in the [`format`](../README.md#consistent-formatting) job. The command is the `check:shellcheck` task in [mise.toml](../mise.toml).
-
-| Option | Reason |
-| --- | --- |
-| `git ls-files` | Do not check untracked files (local throwaway scripts and so on) |
-| `-z` / `-0` | Pass file names NUL-separated so names containing spaces do not break |
-| `-r` | Do not start shellcheck when there is nothing to check |
-| `--external-sources` | Follow files pulled in with `source` |
+The `shellcheck` job in [ci.yml](../.github/workflows/ci.yml) checks the `*.sh` / `*.bash` files under git. Unquoted variable expansions, unintended word splitting, comparisons that are always true — the kind of flaw that raises no error and misbehaves silently. It does not look at formatting (indentation and so on); that is the job of shfmt in the [`format`](../README.md#consistent-formatting) job. The command is the `check:shellcheck` task in [mise.toml](../mise.toml). The files come from `git ls-files`, so untracked files (local throwaway scripts and so on) are not checked, and `--external-sources` makes it follow a `source` into another file instead of skipping it.
 
 Scripts without an extension (files identified only by a shebang) are out of scope. If you add one, add a pattern to `git ls-files`.
 
@@ -152,7 +145,7 @@ Scripts without an extension (files identified only by a shebang) are out of sco
 
 The `hadolint` job in [ci.yml](../.github/workflows/ci.yml) checks the Dockerfiles under git. An unpinned base image tag (`FROM node:latest`), an `apt-get install` without a version, a final `USER` left as root — in short, **constructs that `docker build` accepts but that cost you reproducibility, size, or privilege**. The shell written in `RUN` is covered too, by the bundled ShellCheck, from the same angle as the [shellcheck](#shellcheck) job. The command is the `check:hadolint` task in [mise.toml](../mise.toml).
 
-The reasons for `git ls-files` / `-z` / `-0` are the same as in [shellcheck](#shellcheck). `-r` is there because hadolint reads stdin as a Dockerfile when it is given no file name, and an empty invocation should be avoided.
+The file list comes from `git ls-files` for the same reason as in [shellcheck](#shellcheck). `-r` is there because hadolint reads stdin as a Dockerfile when it is given no file name, and an empty invocation should be avoided.
 
 **hadolint does not walk directories; the files to check must be passed by name.** The patterns in the task pick up `Dockerfile` / `Dockerfile.dev` / `api.Dockerfile` / `web.dockerfile` and the like, including in subdirectories. If you use another name, such as `Containerfile`, add a pattern.
 
@@ -183,14 +176,7 @@ Suppressions for false positives go in the same file ([all options](https://gith
 
 ## lychee
 
-The `lychee` job in [ci.yml](../.github/workflows/ci.yml) checks Markdown for broken links. Most of the links in this repository are anchors to headings and relative paths to files in the repository, and they break silently when a heading is renamed or a file is moved. This job fails the PR for that. The command is the `check:lychee` task in [mise.toml](../mise.toml).
-
-| Option | Reason |
-| --- | --- |
-| `--offline` | Exclude everything but the `file` scheme (= no network access) |
-| `--include-fragments` | Also match the `#anchor` inside the target file |
-| `--no-progress` | Drop the progress bar for non-interactive shells |
-| `.` | Walk the repository root recursively (excluding what is in [.gitignore](../.gitignore)) |
+The `lychee` job in [ci.yml](../.github/workflows/ci.yml) checks Markdown for broken links. Most of the links in this repository are anchors to headings and relative paths to files in the repository, and they break silently when a heading is renamed or a file is moved. This job fails the PR for that. The command is the `check:lychee` task in [mise.toml](../mise.toml); the walk from the repository root skips what [.gitignore](../.gitignore) lists.
 
 **This job does not check external URLs.** With `--offline` removed, a temporary outage or a rate limit at the far end would fail CI and turn it red for reasons unrelated to the code. External URLs are covered by a scheduled run in a separate workflow ([Scheduled external link checks](#scheduled-external-link-checks)).
 
@@ -213,8 +199,6 @@ lychee --no-progress --exclude 'OWNER/REPO' .
 ```
 
 In CI, `--mode plain` is added and the output goes through `tee` so it can be put into the issue body without ANSI escapes.
-
-It is not part of `ci` because link targets disappear without anything happening on our side and a temporary outage makes it fail — the result changes without a code change ([why such checks are scheduled runs](#ci-check-jobs)).
 
 **Anchors are not checked** (`--include-fragments` is not passed). The heading IDs of an external page are decided by whatever renders it (GitHub prefixes README headings with `user-content-`), so it would only produce false positives. Anchors inside the repository are covered on the `ci` side.
 
@@ -240,8 +224,6 @@ Four things differ from the defaults.
 | Notation styles (`MD003` `MD004` `MD029` `MD046` `MD048` `MD049` `MD050`) | Fixed to concrete values instead of `consistent` | `consistent` only aligns things within a single file |
 
 **Body text is written one paragraph per line, with no line breaks inside a paragraph.** Markdown renders a newline inside a paragraph as a space (in Japanese text that surfaces as a stray space in the middle of the rendered sentence), so wrapping is a rendering decision rather than a source one, and keeping a paragraph on one line keeps diffs paragraph-sized — fixing a word does not reflow every line after it. That is why the body limit of `MD013` is raised to 1000 characters.
-
-Trailing whitespace is covered by `MD009`. What [.editorconfig](../.editorconfig) leaves out by excluding `*.md` ([the exceptions](../README.md#two-exceptions)) is filled in here.
 
 **This job alone uses the official [action](https://github.com/DavidAnson/markdownlint-cli2-action) rather than going through mise**, because markdownlint-cli2 is only distributed on npm and installing it with mise would also require a separate node to run it. The version used for the check is the one bundled with the action, and the action is pinned to a commit SHA.
 
@@ -308,7 +290,7 @@ What the tests are for is the borders, not the obvious cases: a commit that crea
 
 The wiring is tested too, because a hook is only ever reached through [.claude/settings.json](../.claude/settings.json): a script renamed without the setting, a hook registered under an event it does not answer with, and a hook script with no test file of its own each fail the job — none of them would fail a test of the scripts alone.
 
-So is the content of the prompt hook. The Conventional Commits type list is written out in [ci.yml](../.github/workflows/ci.yml) (the `PATTERN` and the failure message beside it), in the tables of both READMEs, and in the prompt hook, and nothing derives one copy from another, so the tests compare each copy against the `PATTERN` — the one the `pr-title` job actually enforces.
+So is the content of the prompt hook. Nothing derives the copies of the Conventional Commits type list from one another, so the tests compare each copy named in [PR title format](../README.md#pr-title-format) against the `PATTERN` — the one the `pr-title` job actually enforces.
 
 The tests for the branch rule create a throwaway repository under the bats temporary directory, so their verdict never depends on the branch the runner happens to be on. `jq` ships with GitHub-hosted runners and is what the hooks themselves call, so bats is the only addition to [mise.toml](../mise.toml).
 
@@ -401,7 +383,7 @@ Things to note:
 
 An entry named **`osv-scanner` (GitHub Advanced Security)** appears in the PR's check list, greyed out (`neutral`) with a `1 configuration not found` warning. **This state is normal and does not block the merge** (the only required check is the gate job `ci`).
 
-To report "the alerts this PR newly introduces", Code scanning matches the base-side and head-side analysis results for each configuration present on the base (identified as "workflow file : job name"). The full scan (`osv-scanner.yml:osv-scan`) does not run on PRs, so there is no head-side result and it says it cannot judge that configuration. It is the natural consequence of the two-layer arrangement, and it does not go away once a lockfile is added.
+To report "the alerts this PR newly introduces", Code scanning matches the base-side and head-side analysis results for each configuration present on the base (identified as "workflow file : job name"). The full scan (`osv-scanner.yml:osv-scan`; the job name is the one inside the reusable workflow, not the calling job) does not run on PRs, so there is no head-side result and it says it cannot judge that configuration. It is the natural consequence of the two-layer arrangement, and it does not go away once a lockfile is added.
 
 Removing it would mean adding `pull_request` to the `on` of [osv-scanner.yml](../.github/workflows/osv-scanner.yml), which is deliberately not done. All it buys is turning the grey entry green, at the price of scanning all dependencies twice on every PR and undermining [the reason for the two layers](#osv-scanner). Aligning the SARIF category so the two look like one configuration is not possible either, because the official reusable workflow has no category input.
 

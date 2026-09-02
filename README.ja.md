@@ -194,13 +194,7 @@ gh api repos/OWNER/REPO --jq .squash_merge_commit_title   # PR_TITLE である�
 
 タブの検査（`indent_style`）には実害の防止という意味もあります。YAML は仕様上インデントにタブを使えないため、エディタの既定がタブの環境で `ci.yml` を編集するとワークフローが壊れます。
 
-同じジョブで [shfmt](https://github.com/mvdan/sh) がシェルスクリプトの整形を検査します（コマンドは [mise.toml](mise.toml) の `check:format` タスクにあります）。
-
-| 指定 | 理由 |
-| --- | --- |
-| `-d` | 整形前後の差分を出し、差分があれば終了コードを 1 にする（`-w` のように書き換えない） |
-| `-i 2` | インデントは半角 2 |
-| `-ci` | `case` の中身を字下げする（このリポジトリの既存の書き方） |
+同じジョブで [shfmt](https://github.com/mvdan/sh) がシェルスクリプトの整形を検査します（コマンドは [mise.toml](mise.toml) の `check:format` タスクにあります）。フラグのうち `-ci`（`case` の中身の字下げ）は、このリポジトリの既存の書き方に合わせて付けています。
 
 shfmt の注意点:
 
@@ -211,18 +205,13 @@ editorconfig-checker と shfmt は、他の検査ツールと同じく本体を 
 
 #### 2 つの例外
 
-シェルスクリプトを `indent_size` の検査から外しています（[.editorconfig](.editorconfig) 参照）。heredoc の中は CLI に出力する表示用テキストで、幅を 2 の倍数に揃える意味がありませんが、editorconfig-checker は heredoc を区別できないためです。外した分は同じ `format` ジョブの shfmt が見ます（shfmt は heredoc の中身を整形の対象にしないので、除外を作らずに検査できます）。シェルスクリプトのインデントの情報源は、`.editorconfig` ではなく shfmt のフラグです。
+シェルスクリプトを `indent_size` の検査から外しています（[.editorconfig](.editorconfig) 参照）。heredoc の中は CLI に出力する表示用テキストで、幅を 2 の倍数に揃える意味がありませんが、editorconfig-checker は heredoc を区別できないためです。外した分は同じ `format` ジョブの shfmt が見ます（shfmt は heredoc の中身を整形の対象にしないので、除外を作らずに検査できます）。
 
 `*.md` を行末空白の検査から外しているのは、Markdown では行末の半角スペース 2 つが強制改行を意味するためです。一律に削除すると表示が変わります。外した分は markdownlint-cli2 の `MD009` が見ます（[markdownlint-cli2](docs/ci-jobs.ja.md#markdownlint-cli2)）。
 
 ### issue のテンプレート
 
-[.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE) に 2 種類あります。どちらも YAML の issue フォーム形式です。ラベルは自動で付きます（[ラベル](#ラベル)）。
-
-| テンプレート | 用途 | 自動で付くラベル |
-| --- | --- | --- |
-| [Bug report](.github/ISSUE_TEMPLATE/bug_report.yml)（バグ報告） | 動作がおかしい、エラーが出る | `bug` |
-| [Task](.github/ISSUE_TEMPLATE/task.yml)（作業項目） | 追加したい機能、やるべき作業 | `enhancement` |
+[.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE) に [Bug report](.github/ISSUE_TEMPLATE/bug_report.yml)（バグ報告）と [Task](.github/ISSUE_TEMPLATE/task.yml)（作業項目）の 2 種類あります。どちらも YAML の issue フォーム形式で、それぞれのラベルが自動で付きます（[ラベル](#ラベル)）。
 
 **どちらにも当てはまらないものは Discussions へ。** issue 作成画面に「Ask in Discussions」というリンクを出してあります。話が固まったら、Discussion ページの「Create issue from discussion」で issue に変換できます。
 

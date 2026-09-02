@@ -176,16 +176,16 @@ docker run --rm -v "$PWD:/repo:ro" -w /repo \
 
 | 設定 | 理由 | 外すと |
 | --- | --- | --- |
-| `semanticCommits: 'enabled'` | PR タイトルを `chore(deps): ...` にして [`pr-title`](../README.ja.md#pr-タイトルの書式) を通す | 既定の `auto`（履歴からの自動判定）になり、判定が外れると `pr-title` が落ちてマージできない |
+| `semanticCommits: 'enabled'` | `chore(deps):` の接頭辞（[タイトル](#タイトル)） | 既定の `auto`（履歴からの自動判定）になり、判定が外れると `pr-title` が落ちてマージできない |
 | `rebaseWhen: 'behind-base-branch'` | マージ前の最新化が必須のため、base が進んだら追随させる | base が進んだ PR の最新化が手作業（Update branch）になる |
 | `prHourlyLimit: 0` | 実行が週 1 回なので、1 時間あたり 2 本の既定上限で持ち越さない | 3 本目以降が次週の実行まで持ち越される |
 | `prConcurrentLimit: 0` | 更新を必ず PR にして、[更新の一覧の issue](#更新の一覧の-issue) を完全な一覧にする | open が 10 本を超えると以降が保留され、その分が一覧に出ない |
-| `dependencyDashboard: false` | 標準のダッシュボードを止め、一覧を自前の issue にする（[理由](#標準の-dependency-dashboard-を使わない理由)） | `Dependency Dashboard` issue が立ち、自前の issue と二重になる |
-| `pinDigests: true` | タグは差し替え可能なので、ダイジェストまで固定する（[ダイジェストの固定](#ダイジェストの固定)） | タグ指定だけになり、中身の差し替えを追えなくなる |
+| `dependencyDashboard: false` | [標準の Dependency Dashboard を使わない理由](#標準の-dependency-dashboard-を使わない理由) | `Dependency Dashboard` issue が立ち、自前の issue と二重になる |
+| `pinDigests: true` | [ダイジェストの固定](#ダイジェストの固定) | タグ指定だけになり、中身の差し替えを追えなくなる |
 | `extends` の `helpers:pinGitHubActionDigestsToSemver` | 固定した SHA に添えるコメントを `# v7.0.1` のような厳密なバージョンに保つ（[ダイジェストの固定](#ダイジェストの固定)） | `# v7` のような可動する major タグが書かれ、上流がタグを付け替えるとコメントが固定した commit を指さなくなり、[`zizmor`](ci-jobs.ja.md#zizmor) が `ref-version-mismatch` として報告する |
 | `packageRules` の `non-major` | major 以外は 1 本の PR にまとめる | 更新ごとに PR が立ち、本数が増える |
-| `commitMessage*` / `pr*` の文面 | 更新 PR のタイトルと本文を自前で書く（[PR の文面](#pr-の文面)） | 自動生成の既定の文面に戻り、自動 issue と体裁が揃わない |
-| `fetchChangeLogs: 'off'` | リリースノートを PR に出さないので取得しない（[本文](#本文)） | 表示しないリリースノートを実行ごとに取りに行く |
+| `commitMessage*` / `pr*` の文面 | [PR の文面](#pr-の文面) | 自動生成の既定の文面に戻り、自動 issue と体裁が揃わない |
+| `fetchChangeLogs: 'off'` | [本文](#本文) | 表示しないリリースノートを実行ごとに取りに行く |
 
 ## 何が更新対象になるか
 

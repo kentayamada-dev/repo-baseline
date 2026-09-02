@@ -3,6 +3,7 @@
 ## Critical rules
 
 - When the user's intent or the implementation approach is unclear, or you are torn between approaches, ask the user right away instead of guessing
+- Never state anything as fact without first verifying it in the repo, the tool output, or an authoritative reference; when verification is impossible, say so explicitly instead of guessing
 - Claude edits files only; do not commit, push, or create a PR unless explicitly asked
 - README.md and the files under `docs/` are bilingual pairs (`X.md` English-first + `X.ja.md`, same PR — see CONTRIBUTING.md); everything else is English-only, code comments included
 

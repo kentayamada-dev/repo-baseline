@@ -98,7 +98,7 @@ mise run check              # every check that works from a local checkout
 mise run check:shellcheck   # one job's check
 ```
 
-The first run installs the pinned tools; the results match CI because both sides read the same commands and versions from the same file. Two caveats: [zizmor](#zizmor) runs offline without a `GITHUB_TOKEN` in the environment, so its online audits are skipped with a warning, and [gitleaks](#gitleaks) needs the full history a shallow clone does not have.
+The first run installs the pinned tools; the results match CI because both sides read the same commands and versions from the same file. Two caveats: [zizmor](#zizmor) runs offline without a `GITHUB_TOKEN` in the environment, so its online audits are skipped, and [gitleaks](#gitleaks) needs the full history a shallow clone does not have.
 
 The jobs with no task are those that cannot run from a local checkout alone: [CodeQL](#codeql) and `pr-title` need the GitHub side, [setup-script](#setup-script) needs a token and the API, and [markdownlint-cli2](#markdownlint-cli2), [renovate-config](renovate.md#validating-the-configuration), and [osv-scanner](#osv-scanner) are the three exceptions above that do not run through mise.
 
@@ -137,12 +137,7 @@ How the shell checks divide up: **`run:` inside a workflow is covered by actionl
 
 ## shellcheck
 
-The `shellcheck` job in [ci.yml](../.github/workflows/ci.yml) checks the `*.sh` / `*.bash` files under git. Unquoted variable expansions, unintended word splitting, comparisons that are always true — the kind of flaw that raises no error and misbehaves silently. It does not look at formatting (indentation and so on); that is the job of shfmt in the [`format`](../README.md#consistent-formatting) job.
-
-```bash
-git ls-files -z '*.sh' '*.bash' \
-  | xargs -0 -r shellcheck --color=always --external-sources
-```
+The `shellcheck` job in [ci.yml](../.github/workflows/ci.yml) checks the `*.sh` / `*.bash` files under git. Unquoted variable expansions, unintended word splitting, comparisons that are always true — the kind of flaw that raises no error and misbehaves silently. It does not look at formatting (indentation and so on); that is the job of shfmt in the [`format`](../README.md#consistent-formatting) job. The command is the `check:shellcheck` task in [mise.toml](../mise.toml).
 
 | Option | Reason |
 | --- | --- |
@@ -155,16 +150,11 @@ Scripts without an extension (files identified only by a shebang) are out of sco
 
 ## hadolint
 
-The `hadolint` job in [ci.yml](../.github/workflows/ci.yml) checks the Dockerfiles under git. An unpinned base image tag (`FROM node:latest`), an `apt-get install` without a version, a final `USER` left as root — in short, **constructs that `docker build` accepts but that cost you reproducibility, size, or privilege**. The shell written in `RUN` is covered too, by the bundled ShellCheck, from the same angle as the [shellcheck](#shellcheck) job.
-
-```bash
-git ls-files -z '*Dockerfile' '*Dockerfile.*' '*.dockerfile' \
-  | xargs -0 -r hadolint
-```
+The `hadolint` job in [ci.yml](../.github/workflows/ci.yml) checks the Dockerfiles under git. An unpinned base image tag (`FROM node:latest`), an `apt-get install` without a version, a final `USER` left as root — in short, **constructs that `docker build` accepts but that cost you reproducibility, size, or privilege**. The shell written in `RUN` is covered too, by the bundled ShellCheck, from the same angle as the [shellcheck](#shellcheck) job. The command is the `check:hadolint` task in [mise.toml](../mise.toml).
 
 The reasons for `git ls-files` / `-z` / `-0` are the same as in [shellcheck](#shellcheck). `-r` is there because hadolint reads stdin as a Dockerfile when it is given no file name, and an empty invocation should be avoided.
 
-**hadolint does not walk directories; the files to check must be passed by name.** The patterns above pick up `Dockerfile` / `Dockerfile.dev` / `api.Dockerfile` / `web.dockerfile` and the like, including in subdirectories. If you use another name, such as `Containerfile`, add a pattern.
+**hadolint does not walk directories; the files to check must be passed by name.** The patterns in the task pick up `Dockerfile` / `Dockerfile.dev` / `api.Dockerfile` / `web.dockerfile` and the like, including in subdirectories. If you use another name, such as `Containerfile`, add a pattern.
 
 There is no color option because hadolint has no way to force color (CI logs, not being a tty, come out uncolored).
 
@@ -193,11 +183,7 @@ Suppressions for false positives go in the same file ([all options](https://gith
 
 ## lychee
 
-The `lychee` job in [ci.yml](../.github/workflows/ci.yml) checks Markdown for broken links. Most of the links in this repository are anchors to headings and relative paths to files in the repository, and they break silently when a heading is renamed or a file is moved. This job fails the PR for that.
-
-```bash
-lychee --offline --include-fragments --no-progress .
-```
+The `lychee` job in [ci.yml](../.github/workflows/ci.yml) checks Markdown for broken links. Most of the links in this repository are anchors to headings and relative paths to files in the repository, and they break silently when a heading is renamed or a file is moved. This job fails the PR for that. The command is the `check:lychee` task in [mise.toml](../mise.toml).
 
 | Option | Reason |
 | --- | --- |
@@ -228,7 +214,7 @@ lychee --no-progress --exclude 'OWNER/REPO' .
 
 In CI, `--mode plain` is added and the output goes through `tee` so it can be put into the issue body without ANSI escapes.
 
-It is not part of `ci` because link targets disappear without anything happening on our side and a temporary outage makes it fail (= the result changes without a code change). Making it a required check would stop unrelated PRs for as long as a link target is down.
+It is not part of `ci` because link targets disappear without anything happening on our side and a temporary outage makes it fail — the result changes without a code change ([why such checks are scheduled runs](#ci-check-jobs)).
 
 **Anchors are not checked** (`--include-fragments` is not passed). The heading IDs of an external page are decided by whatever renders it (GitHub prefixes README headings with `user-content-`), so it would only produce false positives. Anchors inside the repository are covered on the `ci` side.
 
@@ -282,7 +268,7 @@ The `zizmor` job in [ci.yml](../.github/workflows/ci.yml) checks workflow defini
 
 The audits are listed in [zizmor's documentation](https://docs.zizmor.sh/audits/): template injection (`${{ }}` embedded directly in `run:`), dangerous triggers such as `pull_request_target`, excessive permissions, unpinned actions and images, and more.
 
-Two audits that check pinned SHAs and used actions against the GitHub API (`impostor-commit`, `known-vulnerable-actions`) are silently skipped without a token. The job passes `github.token` as `GITHUB_TOKEN` to enable them (`contents: read` is enough, since only public information is referenced).
+Two audits that check pinned SHAs and used actions against the GitHub API (`impostor-commit`, `known-vulnerable-actions`) are skipped without a token. The job passes `github.token` as `GITHUB_TOKEN` to enable them (`contents: read` is enough, since only public information is referenced).
 
 It covers the repository root (`.`) and automatically collects composite actions and the Dependabot configuration as well. `--strict-collection` is set, so a file it cannot parse becomes a failure rather than a warning it passes over.
 
@@ -296,11 +282,7 @@ Detection uses the 200-plus rules built into the tool (per-provider regular expr
 
 It scans the entire history. `gitleaks git` uses `git log -p` internally, so `fetch-depth: 0` is added to `actions/checkout` to avoid a shallow clone (at the default depth of 1, a value in an older commit would be missed).
 
-```bash
-gitleaks git --redact --verbose --no-banner
-```
-
-`--redact` keeps the detected value itself out of the log. Run logs are public on a public repository, so without it the check itself would become a leak path. `--verbose` prints where it was found (commit / file / line / rule ID / fingerprint).
+The command is the `check:gitleaks` task in [mise.toml](../mise.toml). `--redact` keeps the detected value itself out of the log. Run logs are public on a public repository, so without it the check itself would become a leak path. `--verbose` prints where it was found (commit / file / line / rule ID / fingerprint).
 
 ### When something is detected
 
@@ -320,12 +302,7 @@ This job does not run on a private repository (the setup script refuses anything
 
 ## hooks
 
-The `hooks` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in [.claude/tests/](../.claude/tests) against the hook scripts next to them in [.claude/hooks/](../.claude/hooks). A hook is a filter — the tool call arrives as JSON on stdin, the verdict leaves as JSON on stdout — so one test feeds one command and reads the verdict back.
-
-```bash
-git ls-files -z '.claude/tests/*.bats' \
-  | xargs -0 -r bats --print-output-on-failure
-```
+The `hooks` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in [.claude/tests/](../.claude/tests) against the hook scripts next to them in [.claude/hooks/](../.claude/hooks). A hook is a filter — the tool call arrives as JSON on stdin, the verdict leaves as JSON on stdout — so one test feeds one command and reads the verdict back. The command is the `check:hooks` task in [mise.toml](../mise.toml).
 
 What the tests are for is the borders, not the obvious cases: a commit that creates its branch first is allowed while the same commit without the branch is denied, and `git log | grep push` is not a push. Those borders are matched textually rather than by parsing the shell, so the false positives that come with it (a quoted `echo "git commit"` is denied all the same) are asserted too — a failure there means the behaviour moved, not that it improved.
 
@@ -335,13 +312,13 @@ So is the content of the prompt hook. The Conventional Commits type list is writ
 
 The tests for the branch rule create a throwaway repository under the bats temporary directory, so their verdict never depends on the branch the runner happens to be on. `jq` ships with GitHub-hosted runners and is what the hooks themselves call, so bats is the only addition to [mise.toml](../mise.toml).
 
-The tests live under `.claude/` rather than in a `tests/` directory of their own, so that deleting the hooks takes their tests out with them, and so that the repository built from the template keeps the obvious place for its own tests free. `-r` is what keeps this job green afterwards: with no `.bats` file left, bats is never started. Delete the job along with the hooks if you drop them.
+The tests live under `.claude/` rather than in a `tests/` directory of their own, so that deleting the hooks takes their tests out with them, and so that the repository built from the template keeps the obvious place for its own tests free. The `-r` of `xargs` in the task is what keeps this job green afterwards: with no `.bats` file left, bats is never started. Delete the job along with the hooks if you drop them.
 
 ## Scheduled Claude Code settings check
 
 [claude-settings.yml](../.github/workflows/claude-settings.yml) validates [.claude/settings.json](../.claude/settings.json) against the Claude Code settings schema from [SchemaStore](https://www.schemastore.org/), using [check-jsonschema](https://github.com/python-jsonschema/check-jsonschema) like the [issue-forms](../README.md#issue-templates) job. Claude Code ignores keys it does not recognize, so a misspelled key fails nothing at run time — the behavior the key was meant to configure is just silently absent. Validation is the only thing that notices.
 
-Two limits shape the job. This schema is not bundled with check-jsonschema, so it is fetched from SchemaStore at run time, and its content follows Claude Code releases — the result can change without any code change here, which is why this is a scheduled run and not a `ci` job. And the schema tolerates unknown top-level keys (`additionalProperties` is `false` only inside nested blocks such as `sandbox` and `permissions`), so a top-level typo still passes.
+Two limits shape the job. This schema is not bundled with check-jsonschema, so it is fetched from SchemaStore at run time, and its content follows Claude Code releases, so the result can change without any code change here ([why such checks are scheduled runs](#ci-check-jobs)). And the schema tolerates unknown top-level keys (`additionalProperties` is `false` only inside nested blocks such as `sandbox` and `permissions`), so a top-level typo still passes.
 
 ```bash
 check-jsonschema --schemafile https://json.schemastore.org/claude-code-settings.json .claude/settings.json
@@ -351,12 +328,7 @@ Failure notification uses [the same mechanism as the settings drift check](drift
 
 ## script-tests
 
-The `script-tests` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in two directories, each against the scripts next to them. [.github/scripts/tests/](../.github/scripts/tests) covers [.github/scripts/](../.github/scripts) — the two the scheduled workflows call to report a failing check as an issue and to retract it once the check passes. [scripts/tests/](../scripts/tests) covers [sync-repo-config.sh](../scripts/sync-repo-config.sh) in [scripts/](../scripts) — the script whose OK / DRIFT / UNKNOWN verdicts the [settings drift check](drift-check.md#settings-drift-check) relies on.
-
-```bash
-git ls-files -z '.github/scripts/tests/*.bats' 'scripts/tests/*.bats' \
-  | xargs -0 -r bats --print-output-on-failure
-```
+The `script-tests` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in two directories, each against the scripts next to them. [.github/scripts/tests/](../.github/scripts/tests) covers [.github/scripts/](../.github/scripts) — the two the scheduled workflows call to report a failing check as an issue and to retract it once the check passes. [scripts/tests/](../scripts/tests) covers [sync-repo-config.sh](../scripts/sync-repo-config.sh) in [scripts/](../scripts) — the script whose OK / DRIFT / UNKNOWN verdicts the [settings drift check](drift-check.md#settings-drift-check) relies on. The command is the `check:script-tests` task in [mise.toml](../mise.toml).
 
 The tests replace `gh` with a stub (the `helper.bash` next to them explains how), so nothing reaches GitHub and no token is needed — which is what makes the decisions around those calls (the ones each script's `--help` describes) testable at all. This job reaches what [setup-script](#setup-script) cannot: a dry run stops before any verdict or write, so the OK / DRIFT / UNKNOWN classification of `--check` and the apply path are only exercised here.
 
@@ -375,7 +347,7 @@ The same tool is split into two layers with different roles.
 | Diff scan | Only the vulnerabilities **the PR newly introduces** | The `osv-scanner-diff` job in [ci.yml](../.github/workflows/ci.yml) (per PR) | The job fails (it is in `ci`'s `needs`, so the PR cannot be merged) |
 | Full scan | Known vulnerabilities across all dependencies | [osv-scanner.yml](../.github/workflows/osv-scanner.yml) (daily + pushes to main + manual) | An alert under Code scanning on the Security tab (the job does not fail) |
 
-The reason for the split is that this check's result changes without any code change. Vulnerabilities are disclosed later, so the full picture is tracked by a scheduled run. Making that a required check on PRs would stop unrelated PRs over a vulnerability already on main, so the PR side looks only at the diff and fails on that. This two-layer arrangement is the setup [the official action](https://github.com/google/osv-scanner-action) recommends.
+The reason for the split is that vulnerabilities are disclosed later: the full picture changes without any code change, so it is tracked by a scheduled run ([why such checks are scheduled runs](#ci-check-jobs)), and the PR side looks only at the diff so that a vulnerability already on main cannot stop an unrelated PR. This two-layer arrangement is the setup [the official action](https://github.com/google/osv-scanner-action) recommends.
 
 ### It is handled differently from the other CLI tools
 

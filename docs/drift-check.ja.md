@@ -2,7 +2,7 @@
 
 [English](drift-check.md) | **日本語**
 
-[セットアップ](../README.ja.md#セットアップ)のスクリプトが入れる設定は、GitHub の画面からいつでも変えられます。変えられても、スクリプトに設定を足したまま再実行を忘れても、`ci` は緑のままです。そこで [repo-settings.yml](../.github/workflows/repo-settings.yml) が毎日（07:00 JST）と main への push 時に `--check` を実行し、現在の設定が定義とずれていれば落ちます。
+[セットアップ](../README.ja.md#セットアップ)のスクリプトが入れる設定は、GitHub の画面からいつでも変えられます。変えられても、スクリプトに設定を足したまま再実行を忘れても、`ci` は緑のままです。そこで [repo-settings.yml](../.github/workflows/repo-settings.yml) が毎日（07:00 JST）と main への push 時に `--check` を実行し、現在の設定が定義とずれていれば落ちます。`ci` のジョブではなく定期実行なのは、コードを変えなくても結果が変わるためです（[こうした検査を定期実行にしている理由](ci-jobs.ja.md#ci-の検査ジョブ)）。
 
 ```bash
 ./scripts/sync-repo-config.sh --check
@@ -36,10 +36,6 @@ ruleset で突き合わせるのは定義に書いた項目だけです。API �
 issue は `Repository settings have drifted` というタイトルで `maintenance` ラベル付きで立ち（[ラベル](../README.ja.md#ラベル)）、本文に検査の出力と実行ログの URL、直し方が入ります。すでに同じ issue が open の間は作り直さずに最新の検査の出力をコメントで追記し、検査が通れば自動的に閉じます。
 
 issue の作成・コメント・close はワークフローの `GITHUB_TOKEN`（`issues: write`）で行います。`SETTINGS_TOKEN` は読み取り専用のままで構いません。
-
-## ci.yml と分けている理由
-
-この検査は「コードを変えていなくても結果が変わる」ため、`ci` の必須チェックには入れていません。必須にすると、誰かが設定を触った時点で無関係な PR まで止まります。[osv-scanner](ci-jobs.ja.md#osv-scanner) を 2 層に分けているのと同じ考え方です。
 
 ## トークンについて
 

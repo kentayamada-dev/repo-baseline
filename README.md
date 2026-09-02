@@ -97,8 +97,6 @@ That enables everything below. Add `--dry-run` if you only want to see what woul
 - Secret scanning push protection (a push that carries a credential is rejected before it lands, where [gitleaks](docs/ci-jobs.md#gitleaks) only reports what is already in the history)
 - Fixing the default permissions of the Actions `GITHUB_TOKEN` to read and forbidding `GITHUB_TOKEN` from creating or approving PRs (so the ceiling when a workflow forgets its `permissions` does not depend on the default)
 
-> The script refuses repositories that are not public.
-
 When applying this to an existing repository, a leftover classic branch protection on main applies alongside the ruleset and makes the behavior hard to follow. The script only warns and continues (`--dry-run` and `--check` do not perform this check), so delete it if it is still there.
 
 ```bash
@@ -196,12 +194,7 @@ The `format` job checks every item in `.editorconfig` using [editorconfig-checke
 
 The tab check (`indent_style`) also prevents concrete breakage. YAML cannot use tabs for indentation by specification, so editing `ci.yml` in an environment whose editor defaults to tabs breaks the workflow.
 
-The same job has [shfmt](https://github.com/mvdan/sh) check the formatting of shell scripts.
-
-```bash
-git ls-files -z '*.sh' '*.bash' \
-  | xargs -0 -r shfmt -d -i 2 -ci
-```
+The same job has [shfmt](https://github.com/mvdan/sh) check the formatting of shell scripts (the command is the `check:format` task in [mise.toml](mise.toml)).
 
 | Option | Reason |
 | --- | --- |
@@ -241,15 +234,7 @@ Since `contact_links` in `config.yml` only accepts absolute URLs, the template h
 
 The format is checked by the `issue-forms` job in `ci` using [check-jsonschema](https://github.com/python-jsonschema/check-jsonschema). A misspelled `type` or a misplaced `validations` is something GitHub only reveals at run time, and it shows up as **the template disappearing from the issue creation page**. The schema applied is the one from [SchemaStore](https://www.schemastore.org/), bundled with the tool itself, so changes on GitHub's side are picked up by updating the tool version.
 
-The job runs the following. `config.yml` configures the template chooser rather than a form, and its schema is different, so it is checked separately. Both extensions are covered because GitHub accepts `.yml` and `.yaml` alike.
-
-```bash
-git ls-files -z '.github/ISSUE_TEMPLATE/*.yml' '.github/ISSUE_TEMPLATE/*.yaml' \
-  ':!:.github/ISSUE_TEMPLATE/config.yml' ':!:.github/ISSUE_TEMPLATE/config.yaml' \
-  | xargs -0 -r check-jsonschema --builtin-schema vendor.github-issue-forms
-git ls-files -z '.github/ISSUE_TEMPLATE/config.yml' '.github/ISSUE_TEMPLATE/config.yaml' \
-  | xargs -0 -r check-jsonschema --builtin-schema vendor.github-issue-config
-```
+The command is the `check:issue-forms` task in [mise.toml](mise.toml). `config.yml` configures the template chooser rather than a form, and its schema is different, so it is checked separately. Both extensions are covered because GitHub accepts `.yml` and `.yaml` alike.
 
 Placing no templates at all is a legitimate choice, so when there is nothing to check it passes without checking. The flip side is that moving them out of `.github/ISSUE_TEMPLATE/` turns the job green with nothing to check.
 

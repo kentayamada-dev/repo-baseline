@@ -214,7 +214,7 @@ CI ではこれに `--mode plain` を足し、出力を `tee` で控えます（
 
 適用する規則は [.markdownlint-cli2.jsonc](../.markdownlint-cli2.jsonc) に書きます（[規則の一覧](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md)）。**検査対象はこのファイルではなく、ジョブが渡す `globs` で決まります。** action の既定はルート直下しか見ないため `**/*.md` を明示しています。渡し忘れると `.github/` 配下が黙って漏れます。
 
-既定から変えているのは 4 つです。
+既定から変えているのは次の 4 つです（規則のほかに `gitignore: true` があり、[.gitignore](../.gitignore) にあるものを検査から外します）。
 
 | 規則 | 変更 | 理由 |
 | --- | --- | --- |
@@ -286,7 +286,7 @@ private リポジトリではこのジョブを走らせません（セットア
 
 [ci.yml](../.github/workflows/ci.yml) の `hooks` ジョブが、[.claude/tests/](../.claude/tests) にある [bats](https://bats-core.readthedocs.io/) のテストで、隣の [.claude/hooks/](../.claude/hooks) にあるフックスクリプトを検査します。フックは標準入力に JSON でツール呼び出しを受け取り、標準出力に JSON で判定を返すフィルタなので、テストはコマンドを 1 つ流し込んで判定を読むだけです。コマンドは [mise.toml](../mise.toml) の `check:hooks` タスクにあります。
 
-テストが押さえるのは当たり前の場合ではなく境目です。先にブランチを作るコミットは通し、ブランチを作らない同じコミットは拒否する。`git log | grep push` は push ではない。この境目はシェルを解析せず文字列で判定しているので、その代償である誤検知（引用しただけの `echo "git commit"` も拒否される）もあわせて固定してあります。そこが落ちたときは、挙動が良くなったのではなく変わったということです。
+テストが押さえるのは当たり前の場合ではなく境目です。先にブランチを作るコミットは通し、ブランチを作らない同じコミットは拒否する。`git log | grep push` は push ではない。この境目はシェルを解析せず文字列で判定しており（各パターンは `[^|;&\n]` で 1 つのパイプライン区間に閉じ、改行も `;` と同じ区切りとして扱います）、その代償である誤検知（引用しただけの `echo "git commit"` も拒否される）もあわせて固定してあります。そこが落ちたときは、挙動が良くなったのではなく変わったということです。
 
 結線もテストの対象です。フックは [.claude/settings.json](../.claude/settings.json) を通してしか呼ばれないため、設定を直さずにスクリプトの名前を変えた場合、答えるイベントと違うイベントに登録した場合、テストファイルのないフックスクリプトを足した場合は、いずれもこのジョブが落ちます。スクリプトだけを見るテストでは、どれも素通りします。
 
@@ -350,22 +350,7 @@ check-jsonschema --schemafile https://json.schemastore.org/claude-code-settings.
 | `push`（main） | 依存を触った PR のマージ | 次の定期実行を待たずに結果を出す。Code scanning のアラートの基準となる「デフォルトブランチの解析結果」を作る |
 | `workflow_dispatch` | 手動 | 設定を変えた直後の確認 |
 
-```yaml
-  osv-scanner:
-    permissions:
-      contents: read
-      actions: read
-      security-events: write
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@<commit sha> # v<タグ>
-    with:
-      scan-args: |-
-        -r
-        --allow-no-lockfiles
-        ./
-      fail-on-vuln: false
-```
-
-`fail-on-vuln: false` にしてあります（既定は `true`）。検出は Code scanning にアラートとして出るので、ジョブは落としません。落とすと同じ脆弱性で毎日赤くなり、「対応済み」「様子見」を個別に記録できないためです。アラートは毎回の実行で更新され、直った脆弱性のアラートは自動で閉じます。通知を受け取るにはリポジトリを watch して Code scanning のアラート通知を有効にしておきます。
+[osv-scanner.yml](../.github/workflows/osv-scanner.yml) では `fail-on-vuln: false` にしてあります（既定は `true`）。検出は Code scanning にアラートとして出るので、ジョブは落としません。落とすと同じ脆弱性で毎日赤くなり、「対応済み」「様子見」を個別に記録できないためです。アラートは毎回の実行で更新され、直った脆弱性のアラートは自動で閉じます。通知を受け取るにはリポジトリを watch して Code scanning のアラート通知を有効にしておきます。
 
 実行そのものが落ちたとき（脆弱性が見つかったときではなく）は、`notify` ジョブが[設定のずれの検査と同じ仕組み](drift-check.ja.md#落ちたときの通知)で `osv-scanner runs are failing` という issue を `maintenance` ラベル付きで立て、実行が通れば自動的に閉じます。issue なしではこの失敗は見えません。何も見つからなかった走査と走らなかった走査は、Security タブからは同じに見えます。
 

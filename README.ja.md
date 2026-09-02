@@ -53,7 +53,7 @@
 | [.typos.toml](.typos.toml) | 誤字検査 typos の設定 |
 | [.editorconfig](.editorconfig) | エディタ側の書式設定（インデント / 改行 / 文字コード） |
 | [.gitattributes](.gitattributes) | 改行コードを LF に固定する git の設定 |
-| [.gitignore](.gitignore) | git の追跡から外すもの（typos の除外にも効きます） |
+| [.gitignore](.gitignore) | git の追跡から外すもの（typos・lychee・markdownlint-cli2 の除外にも効きます） |
 | [docs/drift-check.ja.md](docs/drift-check.ja.md) | リファレンス: 設定のずれの検査と `SETTINGS_TOKEN` |
 | [docs/ci-jobs.ja.md](docs/ci-jobs.ja.md) | リファレンス: CI の検査ジョブ |
 | [docs/renovate.ja.md](docs/renovate.ja.md) | リファレンス: Renovate |

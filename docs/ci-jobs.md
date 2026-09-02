@@ -214,7 +214,7 @@ The `markdownlint` job in [ci.yml](../.github/workflows/ci.yml) checks Markdown 
 
 The rules applied live in [.markdownlint-cli2.jsonc](../.markdownlint-cli2.jsonc) ([the list of rules](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md)). **What gets checked is decided by the `globs` the job passes, not by that file.** The action's default only looks at the repository root, so `**/*.md` is stated explicitly. Forgetting to pass it silently leaves out everything under `.github/`.
 
-Four things differ from the defaults.
+Four things differ from the defaults (besides `gitignore: true`, which keeps whatever [.gitignore](../.gitignore) lists out of the check).
 
 | Rule | Change | Reason |
 | --- | --- | --- |
@@ -286,7 +286,7 @@ This job does not run on a private repository (the setup script refuses anything
 
 The `hooks` job in [ci.yml](../.github/workflows/ci.yml) runs the [bats](https://bats-core.readthedocs.io/) tests in [.claude/tests/](../.claude/tests) against the hook scripts next to them in [.claude/hooks/](../.claude/hooks). A hook is a filter — the tool call arrives as JSON on stdin, the verdict leaves as JSON on stdout — so one test feeds one command and reads the verdict back. The command is the `check:hooks` task in [mise.toml](../mise.toml).
 
-What the tests are for is the borders, not the obvious cases: a commit that creates its branch first is allowed while the same commit without the branch is denied, and `git log | grep push` is not a push. Those borders are matched textually rather than by parsing the shell, so the false positives that come with it (a quoted `echo "git commit"` is denied all the same) are asserted too — a failure there means the behaviour moved, not that it improved.
+What the tests are for is the borders, not the obvious cases: a commit that creates its branch first is allowed while the same commit without the branch is denied, and `git log | grep push` is not a push. Those borders are matched textually rather than by parsing the shell — each pattern is confined to one pipeline segment by `[^|;&\n]`, a newline separating commands just as `;` does — so the false positives that come with it (a quoted `echo "git commit"` is denied all the same) are asserted too — a failure there means the behaviour moved, not that it improved.
 
 The wiring is tested too, because a hook is only ever reached through [.claude/settings.json](../.claude/settings.json): a script renamed without the setting, a hook registered under an event it does not answer with, and a hook script with no test file of its own each fail the job — none of them would fail a test of the scripts alone.
 
@@ -350,22 +350,7 @@ Two costs are accepted:
 | `push` (main) | Merging a PR that touched dependencies | Produce results without waiting for the next scheduled run. Creates the "analysis result for the default branch" that Code scanning alerts are measured against |
 | `workflow_dispatch` | Manual | Confirming things right after a configuration change |
 
-```yaml
-  osv-scanner:
-    permissions:
-      contents: read
-      actions: read
-      security-events: write
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@<commit sha> # v<tag>
-    with:
-      scan-args: |-
-        -r
-        --allow-no-lockfiles
-        ./
-      fail-on-vuln: false
-```
-
-`fail-on-vuln: false` is set (the default is `true`). Detections show up as Code scanning alerts, so the job is not failed. Failing it would turn things red every day over the same vulnerability, with no way to record "handled" or "watching" individually. Alerts are updated on every run, and the alert for a fixed vulnerability closes automatically. To be notified, watch the repository and enable Code scanning alert notifications.
+`fail-on-vuln: false` is set in [osv-scanner.yml](../.github/workflows/osv-scanner.yml) (the default is `true`). Detections show up as Code scanning alerts, so the job is not failed. Failing it would turn things red every day over the same vulnerability, with no way to record "handled" or "watching" individually. Alerts are updated on every run, and the alert for a fixed vulnerability closes automatically. To be notified, watch the repository and enable Code scanning alert notifications.
 
 When the run itself fails — as opposed to finding vulnerabilities — the `notify` job opens an issue titled `osv-scanner runs are failing` with the `maintenance` label, using [the same mechanism as the settings drift check](drift-check.md#notification-on-failure), and once a run passes it closes automatically. Without the issue the failure would be invisible: a scan that found nothing and a scan that never ran look the same from the Security tab.
 

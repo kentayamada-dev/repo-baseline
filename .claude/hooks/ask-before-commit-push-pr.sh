@@ -4,11 +4,9 @@
 # confirmation when the command looks like a git commit/push or gh pr create
 # (CLAUDE.md: those need an explicit user request).
 #
-# [^|;&\n] keeps each match inside one pipeline segment (a newline separates
-# commands just as ; does), so "git log | grep push" does not trigger. A push
-# right after stash is git stash push, the local operation CLAUDE.md prefers
-# over a hard reset, so it is left alone. Matching is textual, not a shell parse
-# (docs/ci-jobs.md#hooks).
+# A push right after stash is git stash push, the local operation CLAUDE.md
+# prefers over a hard reset, so it is left alone. Matching is textual, not a
+# shell parse (docs/ci-jobs.md#hooks).
 #
 # The hook fails closed: a tool call it cannot read (not JSON, or no command
 # string) gets the same "ask" — confirmation is the gate, and a command the

@@ -126,15 +126,16 @@ trap notify_issue_config EXIT
 
 # Makes it clear where application stopped when something fails midway. The error
 # message alone does not tell you that the repository settings were not applied.
+# Nothing changes before the first write, so a failure up to that point (gh
+# unreachable, the visibility lookup) gets the plain error only; --dry-run and
+# --check never reach the first write, so neither gets this reminder.
 #
 # This hooks ERR rather than EXIT because notify_issue_config above already uses the
 # EXIT trap (a later trap replaces the earlier one). ERR does not fire on an exit, so
 # it never duplicates the places that print their own message and then exit.
+applying=false
 notify_partial() {
-  # --dry-run and --check change nothing, so this reminder is not needed.
-  if [[ "$DRY_RUN" == true || "$CHECK" == true ]]; then
-    return 0
-  fi
+  [[ "$applying" == true ]] || return 0
   cat >&2 <<'MSG'
 
 ------------------------------------------------------------
@@ -485,6 +486,7 @@ done < <(jq -r '.conditions.ref_name.include[]?' "${RULESET_FILES[@]}" | sort -u
 # turn the target of the following PUT into a broken string.
 existing_rulesets="$(gh api "repos/${REPO}/rulesets?includes_parents=false" 2>/dev/null || echo '[]')"
 
+applying=true
 for i in "${!RULESET_FILES[@]}"; do
   ruleset_file="${RULESET_FILES[$i]}"
   ruleset_name="${RULESET_NAMES[$i]}"

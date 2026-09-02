@@ -2,7 +2,7 @@
 
 **English** | [日本語](drift-check.ja.md)
 
-The settings the script in [Setup](../README.md#setup) applies can be changed from the GitHub UI at any time. Either way — whether someone changes them in the UI, or a setting is added to the script and nobody re-runs it — `ci` stays green. So [repo-settings.yml](../.github/workflows/repo-settings.yml) runs `--check` daily (07:00 JST) and on pushes to main, and fails when the current settings have drifted from the definitions.
+The settings the script in [Setup](../README.md#setup) applies can be changed from the GitHub UI at any time. Either way — whether someone changes them in the UI, or a setting is added to the script and nobody re-runs it — `ci` stays green. So [repo-settings.yml](../.github/workflows/repo-settings.yml) runs `--check` daily (07:00 JST) and on pushes to main, and fails when the current settings have drifted from the definitions. It is a scheduled run rather than a `ci` job because its result changes without any code change ([why such checks are scheduled runs](ci-jobs.md#ci-check-jobs)).
 
 ```bash
 ./scripts/sync-repo-config.sh --check
@@ -36,10 +36,6 @@ With `REPO_SETTINGS=false`, the repository settings check is skipped and only th
 The issue is titled `Repository settings have drifted` and gets the `maintenance` label ([Labels](../README.md#labels)); the body holds the check output, the run log URL, and how to fix it. While the same issue is already open, the latest check output is commented on it instead of creating another, and once the check passes it closes automatically.
 
 Creating, commenting on, and closing the issue uses the workflow's `GITHUB_TOKEN` (`issues: write`). `SETTINGS_TOKEN` can stay read-only.
-
-## Why it is separate from ci.yml
-
-Because the result of this check can change without any code change, it is not part of the required check `ci`. Making it required would stop unrelated PRs the moment somebody touches a setting. It is the same reasoning behind splitting [osv-scanner](ci-jobs.md#osv-scanner) into two layers.
 
 ## About the token
 

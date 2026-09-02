@@ -100,7 +100,7 @@ The whole phrase is carried in `commitMessageTopic`, with `commitMessageAction` 
 
 The `chore(deps):` prefix comes from `semanticCommits: 'enabled'` (a preset included in `config:recommended` makes it `fix(deps):` for the application's own dependencies). The shape of the prefix is unchanged, so CI's [`pr-title`](../README.md#pr-title-format) passes.
 
-`groupSlug` is stated explicitly in `packageRules` so the branch name stays fixed independently of the group name wording. The group name is also used in the branch name (`renovate/non-major`), and if that breaks it also affects the filter used by [The update list issue](#the-update-list-issue) (branches starting with `renovate/`).
+`groupSlug` is stated explicitly in `packageRules` so the branch name stays fixed independently of the group name wording. The slug is what the branch name is built from (`renovate/non-major`), and if that breaks it also affects the filter used by [The update list issue](#the-update-list-issue) (branches starting with `renovate/`).
 
 ### Body
 

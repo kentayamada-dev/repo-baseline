@@ -223,9 +223,9 @@ check_settings() {
 
     for endpoint in "${REPO_SETTINGS_ENDPOINTS[@]}"; do
       if [[ "$endpoint" == vulnerability-alerts ]]; then
-        # No body to read .enabled from (see the definition above). A user token without
-        # admin read also gets 404 (only app tokens get 403), indistinguishable from
-        # "disabled" — hence the admin check (docs/drift-check.md "About the token").
+        # No body to read .enabled from (see the definition above). Why a 404 needs the
+        # admin check is in docs/drift-check.md "About the token"; only app tokens get
+        # a 403 instead.
         if err="$(gh api --silent "repos/${REPO}/${endpoint}" 2>&1)"; then
           echo "  OK      ${endpoint} = true"
         elif grep -q 'HTTP 404' <<<"$err"; then

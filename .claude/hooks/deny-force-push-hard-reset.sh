@@ -8,9 +8,8 @@
 # --force\b covers --force-with-lease and --force-if-includes too (the hyphen
 # is a word boundary): with main unpushable and every change squash-merged,
 # the safer variants have no job here either. A refspec that starts with + is
-# a force push carrying no flag at all, so \s\+\S counts as one. [^|;&\n]
-# keeps each match inside one pipeline segment (a newline separates commands
-# just as ; does). Matching is textual, not a shell parse (docs/ci-jobs.md#hooks).
+# a force push carrying no flag at all, so \s\+\S counts as one. Matching is
+# textual, not a shell parse (docs/ci-jobs.md#hooks).
 #
 # git clean is denied in every form, the dry run included, to match the deny
 # rule in settings.json: untracked files are uncommitted work too, and a clean

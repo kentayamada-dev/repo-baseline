@@ -53,7 +53,7 @@ The rest is reference material to look up when you need it.
 | [.typos.toml](.typos.toml) | Configuration for typos, the typo checker |
 | [.editorconfig](.editorconfig) | Editor-side formatting settings (indentation / line endings / encoding) |
 | [.gitattributes](.gitattributes) | The git setting that fixes line endings to LF |
-| [.gitignore](.gitignore) | What git does not track (it also excludes those paths from typos) |
+| [.gitignore](.gitignore) | What git does not track (typos, lychee, and markdownlint-cli2 skip those paths too) |
 | [docs/drift-check.md](docs/drift-check.md) | Reference: the settings drift check and `SETTINGS_TOKEN` |
 | [docs/ci-jobs.md](docs/ci-jobs.md) | Reference: the CI check jobs |
 | [docs/renovate.md](docs/renovate.md) | Reference: Renovate |

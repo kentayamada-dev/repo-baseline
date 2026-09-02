@@ -194,13 +194,7 @@ The `format` job checks every item in `.editorconfig` using [editorconfig-checke
 
 The tab check (`indent_style`) also prevents concrete breakage. YAML cannot use tabs for indentation by specification, so editing `ci.yml` in an environment whose editor defaults to tabs breaks the workflow.
 
-The same job has [shfmt](https://github.com/mvdan/sh) check the formatting of shell scripts (the command is the `check:format` task in [mise.toml](mise.toml)).
-
-| Option | Reason |
-| --- | --- |
-| `-d` | Print the diff before and after formatting and exit 1 if there is one (it does not rewrite, unlike `-w`) |
-| `-i 2` | Indent with 2 spaces |
-| `-ci` | Indent the contents of `case` (the existing style in this repository) |
+The same job has [shfmt](https://github.com/mvdan/sh) check the formatting of shell scripts (the command is the `check:format` task in [mise.toml](mise.toml)). Of its flags, `-ci` (indenting the contents of `case`) is there because that is the existing style in this repository.
 
 Things to note about shfmt:
 
@@ -211,18 +205,13 @@ editorconfig-checker and shfmt are installed with mise and run like the other ch
 
 #### Two exceptions
 
-Shell scripts are excluded from the `indent_size` check (see [.editorconfig](.editorconfig)). The contents of a heredoc are display text printed to the CLI, where aligning the width to a multiple of 2 is meaningless, but editorconfig-checker cannot tell heredoc content apart from code. The excluded files are still covered by shfmt in the same `format` job (shfmt does not format the contents of a heredoc, so it can check without any exclusion). The source of truth for indentation in shell scripts is the shfmt flags, not `.editorconfig`.
+Shell scripts are excluded from the `indent_size` check (see [.editorconfig](.editorconfig)). The contents of a heredoc are display text printed to the CLI, where aligning the width to a multiple of 2 is meaningless, but editorconfig-checker cannot tell heredoc content apart from code. The excluded files are still covered by shfmt in the same `format` job (shfmt does not format the contents of a heredoc, so it can check without any exclusion).
 
 `*.md` is excluded from the trailing-whitespace check because in Markdown two trailing spaces mean a hard line break. Removing them uniformly would change the rendering. The excluded files are still covered by `MD009` in markdownlint-cli2 ([markdownlint-cli2](docs/ci-jobs.md#markdownlint-cli2)).
 
 ### Issue templates
 
-There are two in [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE). Both are YAML issue forms. Labels are applied automatically ([Labels](#labels)).
-
-| Template | Purpose | Label applied automatically |
-| --- | --- | --- |
-| [Bug report](.github/ISSUE_TEMPLATE/bug_report.yml) | Something behaves incorrectly or raises an error | `bug` |
-| [Task](.github/ISSUE_TEMPLATE/task.yml) | A feature to add or work that needs doing | `enhancement` |
+There are two in [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE), [Bug report](.github/ISSUE_TEMPLATE/bug_report.yml) and [Task](.github/ISSUE_TEMPLATE/task.yml). Both are YAML issue forms, and each applies its label automatically ([Labels](#labels)).
 
 **Anything that fits neither goes to Discussions.** The issue creation page shows an "Ask in Discussions" link. Once the discussion settles, "Create issue from discussion" on the Discussion page converts it into an issue.
 

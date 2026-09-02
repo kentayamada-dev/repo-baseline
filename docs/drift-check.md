@@ -23,7 +23,7 @@ For a ruleset, only what the definition names is compared. The API adds fields o
 
 The expected values live in `REPO_SETTINGS_EXPECTED` / `REPO_SETTINGS_ENDPOINTS` / `SECURITY_ANALYSIS_EXPECTED` / `ACTIONS_WORKFLOW_EXPECTED` / `LABELS_EXPECTED` in the [script](../scripts/sync-repo-config.sh), and both applying and checking read from there, so fixing one side without the other can never leave them disagreeing. Adding a setting is a single line here, and it is automatically covered by `--check` and `--dry-run`.
 
-With `REPO_SETTINGS=false`, the repository settings check is skipped and only the rulesets are examined. On drift, running it without arguments applies the definitions.
+On drift, running it without arguments applies the definitions.
 
 ```bash
 ./scripts/sync-repo-config.sh
@@ -37,9 +37,11 @@ The issue is titled `Repository settings have drifted` and gets the `maintenance
 
 Creating, commenting on, and closing the issue uses the workflow's `GITHUB_TOKEN` (`issues: write`). `SETTINGS_TOKEN` can stay read-only.
 
+The other scheduled workflows report the same way, and their reporting steps share a shape that each file only points at from a comment. A check whose output goes through `tee` sets `pipefail`, because otherwise tee's exit status would hide a failed check. The step that opens the issue also tests `steps.check.outcome`, so that a failure in another step, such as checkout, does not open a bogus issue. Where the reporting is a `notify` job of its own ([osv-scanner](ci-jobs.md#osv-scanner), [Scorecard](ci-jobs.md#scorecard), [Renovate](renovate.md#when-a-run-fails)), that job runs under `!cancelled()` so that it still runs when the job it inspects has failed, checks out the repository because the scripts that do the reporting live in it, and does nothing for a result that is neither success nor failure, such as cancelled.
+
 ## About the token
 
-**The default `GITHUB_TOKEN` cannot read immutable releases, Dependabot alerts, secret scanning push protection, or the Actions default permissions** — they are reported as `UNKNOWN`. To run the check from Actions, register a fine-grained PAT with Administration read access as the `SETTINGS_TOKEN` secret. When it is registered, the workflow uses it.
+**The default `GITHUB_TOKEN` cannot read everything the check looks at** (the table below says which items need more); those come back as `UNKNOWN`. To run the check from Actions, register a fine-grained PAT as the `SETTINGS_TOKEN` secret. When it is registered, the workflow uses it.
 
 ```bash
 gh secret set SETTINGS_TOKEN

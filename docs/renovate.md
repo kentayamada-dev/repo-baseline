@@ -178,16 +178,16 @@ These are the points where [renovate.json5](../.github/renovate.json5) differs f
 
 | Setting | Reason | If dropped |
 | --- | --- | --- |
-| `semanticCommits: 'enabled'` | Makes PR titles `chore(deps): ...` so they pass [`pr-title`](../README.md#pr-title-format) | It falls back to the default `auto` (inferred from history), and a wrong inference makes `pr-title` fail so the PR cannot be merged |
+| `semanticCommits: 'enabled'` | The `chore(deps):` prefix ([Title](#title)) | It falls back to the default `auto` (inferred from history), and a wrong inference makes `pr-title` fail so the PR cannot be merged |
 | `rebaseWhen: 'behind-base-branch'` | Being up to date before merging is required, so PRs follow along once the base moves ahead | Bringing a PR whose base moved ahead up to date becomes manual work (Update branch) |
 | `prHourlyLimit: 0` | The run is weekly, so nothing should be carried over by the default limit of two per hour | The third and later PRs are carried over to next week's run |
 | `prConcurrentLimit: 0` | Every update becomes a PR, so that [The update list issue](#the-update-list-issue) is a complete list | Once more than 10 are open the rest are held back and do not appear in the list |
-| `dependencyDashboard: false` | Turns off the built-in dashboard and uses a hand-rolled issue for the list ([why](#why-the-built-in-dependency-dashboard-is-not-used)) | A `Dependency Dashboard` issue is opened, duplicating the hand-rolled one |
-| `pinDigests: true` | Tags can be re-pointed, so pin all the way to the digest ([Pinning digests](#pinning-digests)) | Only the tag is specified, and a swap of the contents can no longer be tracked |
+| `dependencyDashboard: false` | [Why the built-in Dependency Dashboard is not used](#why-the-built-in-dependency-dashboard-is-not-used) | A `Dependency Dashboard` issue is opened, duplicating the hand-rolled one |
+| `pinDigests: true` | [Pinning digests](#pinning-digests) | Only the tag is specified, and a swap of the contents can no longer be tracked |
 | `helpers:pinGitHubActionDigestsToSemver` in `extends` | Keeps the comment beside a pinned SHA at an exact version such as `# v7.0.1` ([Pinning digests](#pinning-digests)) | A moving major tag such as `# v7` is written, and once upstream re-points it the comment no longer names the pinned commit, which [`zizmor`](ci-jobs.md#zizmor) reports as `ref-version-mismatch` |
 | `non-major` in `packageRules` | Groups everything except major into a single PR | A PR is opened per update and the count grows |
-| The `commitMessage*` / `pr*` wording | Writes the title and body of update PRs by hand ([PR wording](#pr-wording)) | It reverts to the generated default wording, which does not match the automated issues |
-| `fetchChangeLogs: 'off'` | Release notes are not shown in the PR, so they are not fetched ([Body](#body)) | Release notes that are never displayed are fetched on every run |
+| The `commitMessage*` / `pr*` wording | [PR wording](#pr-wording) | It reverts to the generated default wording, which does not match the automated issues |
+| `fetchChangeLogs: 'off'` | [Body](#body) | Release notes that are never displayed are fetched on every run |
 
 ## What gets updated
 

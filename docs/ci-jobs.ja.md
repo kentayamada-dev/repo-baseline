@@ -137,14 +137,7 @@ mise run check:shellcheck   # 1 つのジョブの検査だけ
 
 ## shellcheck
 
-[ci.yml](../.github/workflows/ci.yml) の `shellcheck` ジョブが、git 管理下の `*.sh` / `*.bash` を検査します。未クォートの変数展開、意図しない単語分割、常に真になる比較など、実行してもエラーにならず黙って誤動作する類の不備が対象です。整形（インデントなど）は見ません。そちらは [`format`](../README.ja.md#書式の統一) ジョブの shfmt が担当します。コマンドは [mise.toml](../mise.toml) の `check:shellcheck` タスクにあります。
-
-| 指定 | 理由 |
-| --- | --- |
-| `git ls-files` | 追跡外のファイル（手元の一時スクリプトなど）は検査しない |
-| `-z` / `-0` | ファイル名を NUL 区切りで渡し、空白を含む名前でも壊れないようにする |
-| `-r` | 対象が 1 件も無いときに shellcheck を起動しない |
-| `--external-sources` | `source` で読み込む先のファイルも追跡する |
+[ci.yml](../.github/workflows/ci.yml) の `shellcheck` ジョブが、git 管理下の `*.sh` / `*.bash` を検査します。未クォートの変数展開、意図しない単語分割、常に真になる比較など、実行してもエラーにならず黙って誤動作する類の不備が対象です。整形（インデントなど）は見ません。そちらは [`format`](../README.ja.md#書式の統一) ジョブの shfmt が担当します。コマンドは [mise.toml](../mise.toml) の `check:shellcheck` タスクにあります。対象は `git ls-files` から取るので、追跡外のファイル（手元の一時スクリプトなど）は検査しません。`--external-sources` は、`source` で読み込む先のファイルを飛ばさず追跡させるためです。
 
 拡張子を持たないスクリプト（shebang だけのファイル）は対象外です。追加したら `git ls-files` のパターンを足してください。
 
@@ -152,7 +145,7 @@ mise run check:shellcheck   # 1 つのジョブの検査だけ
 
 [ci.yml](../.github/workflows/ci.yml) の `hadolint` ジョブが、git 管理下の Dockerfile を検査します。ベースイメージのタグ未固定（`FROM node:latest`）、バージョン指定の無い `apt-get install`、最後の `USER` が root のままなど、**`docker build` は通るが再現性・サイズ・権限で損をする書き方**が対象です。`RUN` に書いたシェルも、同梱の ShellCheck が [shellcheck](#shellcheck) ジョブと同じ観点で見ます。コマンドは [mise.toml](../mise.toml) の `check:hadolint` タスクにあります。
 
-`git ls-files` / `-z` / `-0` の理由は [shellcheck](#shellcheck) と同じです。`-r` は、hadolint がファイル名を渡されないと標準入力を Dockerfile として読むため、空の実行をさせないために付けています。
+対象を `git ls-files` から取る理由は [shellcheck](#shellcheck) と同じです。`-r` は、hadolint がファイル名を渡されないと標準入力を Dockerfile として読むため、空の実行をさせないために付けています。
 
 **hadolint はディレクトリを辿らず、検査対象はファイル名で渡す必要があります。** タスクのパターンで `Dockerfile` / `Dockerfile.dev` / `api.Dockerfile` / `web.dockerfile` などを、サブディレクトリも含めて拾います。`Containerfile` のような別の名前を使う場合はパターンを足してください。
 
@@ -183,14 +176,7 @@ ignore-hidden = false
 
 ## lychee
 
-[ci.yml](../.github/workflows/ci.yml) の `lychee` ジョブが、Markdown のリンク切れを検査します。このリポジトリのリンクの大半は見出しへのアンカーとリポジトリ内ファイルへの相対パスで、見出しの改名やファイルの移動で静かに切れます。このジョブはそれを PR で落とします。コマンドは [mise.toml](../mise.toml) の `check:lychee` タスクにあります。
-
-| 指定 | 理由 |
-| --- | --- |
-| `--offline` | `file` スキーム以外を検査対象から外す（= 通信しない） |
-| `--include-fragments` | リンク先ファイルの中の `#アンカー` まで照合する |
-| `--no-progress` | 非対話シェル向けにプログレスバーを消す |
-| `.` | リポジトリのルートを再帰的にたどる（[.gitignore](../.gitignore) のものは除外） |
+[ci.yml](../.github/workflows/ci.yml) の `lychee` ジョブが、Markdown のリンク切れを検査します。このリポジトリのリンクの大半は見出しへのアンカーとリポジトリ内ファイルへの相対パスで、見出しの改名やファイルの移動で静かに切れます。このジョブはそれを PR で落とします。コマンドは [mise.toml](../mise.toml) の `check:lychee` タスクにあります。リポジトリのルートからたどる際、[.gitignore](../.gitignore) にあるものは除外されます。
 
 **このジョブは外部 URL を検査しません。** `--offline` を外すと相手先の一時的な不調やレート制限で CI が落ち、コードと無関係に赤くなるためです。外部 URL は別ワークフローの定期実行で見ます（[外部リンクの定期検査](#外部リンクの定期検査)）。
 
@@ -213,8 +199,6 @@ lychee --no-progress --exclude 'OWNER/REPO' .
 ```
 
 CI ではこれに `--mode plain` を足し、出力を `tee` で控えます（ANSI エスケープを混ぜずに issue 本文へそのまま載せるため）。
-
-`ci` に入れていないのは、リンク先はこちらが何もしなくても消え、一時的な不調でも落ちる — コードを変えなくても結果が変わる — ためです（[こうした検査を定期実行にしている理由](#ci-の検査ジョブ)）。
 
 **アンカーは見ません**（`--include-fragments` を付けていません）。外部ページの見出し ID は描画側の都合で決まり（GitHub は README の見出しに `user-content-` を付けます）、誤検出にしかならないためです。リポジトリ内のアンカーは `ci` 側が見ています。
 
@@ -240,8 +224,6 @@ CI ではこれに `--mode plain` を足し、出力を `tee` で控えます（
 | 記法のスタイル（`MD003` `MD004` `MD029` `MD046` `MD048` `MD049` `MD050`） | `consistent` から具体値に固定 | `consistent` は 1 ファイルの中でしか揃わないため |
 
 **本文は途中で改行せず、1 段落を 1 行で書きます。** Markdown は段落内の改行を半角スペースに変換して表示するため、日本語の文を途中で折り返すと、表示された文の途中に空白が入ります。折り返しはソース側ではなく表示側で決めることでもあり、1 段落 1 行にしておけば差分が段落単位になって、語句を直しただけで以降の折り返し位置がずれる、といったことも起きません。`MD013` の本文の上限を 1000 文字まで上げているのはこのためです。
-
-行末の空白は `MD009` が見ます。[.editorconfig](../.editorconfig) が `*.md` を検査から外している分（[例外](../README.ja.md#2-つの例外)）はここで埋まります。
 
 **このジョブだけは公式の [action](https://github.com/DavidAnson/markdownlint-cli2-action) を使い、mise を経由しません。** markdownlint-cli2 は npm でしか配布されておらず、mise で入れると実行用の node も別に要るためです。検査に使われるバージョンは action に同梱されたもので、action は commit SHA で固定してあります。
 
@@ -308,7 +290,7 @@ private リポジトリではこのジョブを走らせません（セットア
 
 結線もテストの対象です。フックは [.claude/settings.json](../.claude/settings.json) を通してしか呼ばれないため、設定を直さずにスクリプトの名前を変えた場合、答えるイベントと違うイベントに登録した場合、テストファイルのないフックスクリプトを足した場合は、いずれもこのジョブが落ちます。スクリプトだけを見るテストでは、どれも素通りします。
 
-prompt フックは中身も対象です。Conventional Commits の type 一覧は [ci.yml](../.github/workflows/ci.yml)（`PATTERN` とその隣の失敗メッセージ）、両 README の表、prompt フックに書き出されていて、どのコピーも他から導出されないため、テストが各コピーを `PATTERN`（`pr-title` ジョブが実際に強制するもの）と突き合わせます。
+prompt フックは中身も対象です。Conventional Commits の type 一覧のコピーはどれも他から導出されないため、テストが[PR タイトルの書式](../README.ja.md#pr-タイトルの書式)に挙げた各コピーを `PATTERN`（`pr-title` ジョブが実際に強制するもの）と突き合わせます。
 
 ブランチ規則のテストは bats の一時ディレクトリに使い捨てのリポジトリを作るため、判定が runner のいるブランチに左右されることはありません。`jq` は GitHub ホストの runner に最初から入っていて、そもそも呼ぶのはフック自身なので、[mise.toml](../mise.toml) に足すのは bats だけです。
 
@@ -401,7 +383,7 @@ check-jsonschema --schemafile https://json.schemastore.org/claude-code-settings.
 
 PR のチェック一覧に **`osv-scanner`（GitHub Advanced Security）** という項目が並び、`1 configuration not found` の警告とともに灰色（`neutral`）になります。**この状態が正常で、マージも止まりません**（必須チェックはゲートジョブ `ci` だけです）。
 
-Code scanning は「その PR が新たに持ち込んだアラート」を出すために、base に存在する configuration（識別は「ワークフローファイル : ジョブ名」）ごとに base 側と head 側の解析結果を突き合わせます。全体検査（`osv-scanner.yml:osv-scan`）は PR では走らないため head 側に結果が無く、「この configuration については判定できない」と言われます。2 層に分けた構成の当然の帰結で、lockfile を置いても消えません。
+Code scanning は「その PR が新たに持ち込んだアラート」を出すために、base に存在する configuration（識別は「ワークフローファイル : ジョブ名」）ごとに base 側と head 側の解析結果を突き合わせます。全体検査（`osv-scanner.yml:osv-scan`。ジョブ名は呼び出し側ではなく再利用可能ワークフロー内部のもの）は PR では走らないため head 側に結果が無く、「この configuration については判定できない」と言われます。2 層に分けた構成の当然の帰結で、lockfile を置いても消えません。
 
 消すには [osv-scanner.yml](../.github/workflows/osv-scanner.yml) の `on` に `pull_request` を足すことになりますが、入れていません。得られるのは灰色の項目が緑になることだけで、代わりに毎 PR で依存全体を二重に走査し、[2 層に分ける理由](#osv-scanner)を崩すためです。SARIF の category を揃えて 1 つの configuration に見せる手も、公式の再利用可能ワークフローに category の入力が無いため取れません。
 

@@ -162,6 +162,13 @@ setup() {
   [[ "${output}" == *'classic branch protection'* ]]
 }
 
+@test "a failure before the first write does not claim a partial application" {
+  fail_endpoint repos/owner/repo 1
+  run -1 run_sync
+  [[ "${output}" != *'Only part of the configuration was applied'* ]]
+  assert_gh_not_called '--method'
+}
+
 @test "a failure midway reports the partial application and the pending rewrite" {
   fail_endpoint repos/owner/repo/immutable-releases 1
   run -1 run_sync

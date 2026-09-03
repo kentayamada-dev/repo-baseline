@@ -39,6 +39,6 @@ We cannot promise a response time. If two weeks pass with no reply, follow up th
 
 ## Automated checks
 
-Before reporting, you can use these to see whether something has already been detected. Findings appear under Code scanning on the Security tab. The security-related checks are [CodeQL](docs/ci-jobs.md#codeql), [ghalint](docs/ci-jobs.md#ghalint), [zizmor](docs/ci-jobs.md#zizmor), [gitleaks](docs/ci-jobs.md#gitleaks), [osv-scanner](docs/ci-jobs.md#osv-scanner), and [Scorecard](docs/ci-jobs.md#scorecard); what each looks at is in [CI check jobs](docs/ci-jobs.md#ci-check-jobs).
+Before reporting, you can use these to see whether something has already been detected. The findings of [CodeQL](docs/ci-jobs.md#codeql), [osv-scanner](docs/ci-jobs.md#osv-scanner), and [Scorecard](docs/ci-jobs.md#scorecard) appear under Code scanning on the Security tab; those of [ghalint](docs/ci-jobs.md#ghalint), [zizmor](docs/ci-jobs.md#zizmor), and [gitleaks](docs/ci-jobs.md#gitleaks) show up only as a failed `ci` run on the PR. What each looks at is in [CI check jobs](docs/ci-jobs.md#ci-check-jobs).
 
 These checks only cover known patterns and known vulnerabilities. Design flaws and operational gaps sail straight through them, so tell us through the channel above if you notice one.

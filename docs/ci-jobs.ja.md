@@ -125,7 +125,7 @@ mise run check:shellcheck   # 1 つのジョブの検査だけ
   gh api --method PATCH repos/OWNER/REPO/code-scanning/default-setup -f state=not-configured
   ```
 
-- fork からの PR では `security-events: write` が付与されず、解析結果のアップロードに失敗する可能性があります（未検証）。外部からの PR を受けるようになってから確認し、失敗するならジョブに `if` を付けて fork の PR ではスキップしてください（`skipped` は `ci` で成功扱いになります）。その場合、fork からの変更はマージ後の main の run で初めて解析されます。スキップすると [main.json](../.github/rulesets/main.json) の `code_scanning` ルールが判定する CodeQL の結果も無くなるので、マージできるかを確認し、できなければこのルールも外してください。
+- fork からの PR では `security-events: write` が付与されず、解析結果のアップロードに失敗する可能性があります（未検証）。外部からの PR を受けるようになってから確認し、失敗するならジョブに `if` を付けて fork の PR ではスキップしてください（[`ci` でのスキップの扱い](#ci-にジョブを追加する)）。その場合、fork からの変更はマージ後の main の run で初めて解析されます。スキップすると [main.json](../.github/rulesets/main.json) の `code_scanning` ルールが判定する CodeQL の結果も無くなるので、マージできるかを確認し、できなければこのルールも外してください。
 
 ## actionlint
 
@@ -163,12 +163,7 @@ mise run check:shellcheck   # 1 つのジョブの検査だけ
 
 設定は [.typos.toml](../.typos.toml) に書きます。初期状態で入れてあるのは 2 つです。
 
-```toml
-[files]
-ignore-hidden = false
-```
-
-**typos は既定で `.` 始まりのファイルとディレクトリを飛ばします。** 外さないと `.github/` 配下がまるごと検査対象から外れます。`.git` 自体は [.gitignore](../.gitignore) に書いてあるため、gitignore を尊重する既定の動作で除外されます。
+**1 つは `ignore-hidden = false` です。typos は既定で `.` 始まりのファイルとディレクトリを飛ばします。** 外さないと `.github/` 配下がまるごと検査対象から外れます。`.git` 自体は [.gitignore](../.gitignore) に書いてあるため、gitignore を尊重する既定の動作で除外されます。
 
 もう 1 つは `extend-ignore-re` で、この節の綴り間違いの例を除外しています（外すと typos 自身がこのファイルを誤字として弾きます）。
 
@@ -280,7 +275,7 @@ excludes:
 
 `gh` と `jq` は GitHub ホストの runner に最初から入っているため、[mise.toml](../mise.toml) には足していません。認証はワークフローの `GITHUB_TOKEN` で足ります。
 
-private リポジトリではこのジョブを走らせません（セットアップスクリプトが public 以外を拒否するため、回せば必ず落ちます）。スキップは `ci` 側で成功扱いになるので、private でも PR は止まりません。
+private リポジトリではこのジョブを走らせません（セットアップスクリプトが public 以外を拒否するため、回せば必ず落ちます）。それで PR が止まることはありません（[`ci` でのスキップの扱い](#ci-にジョブを追加する)）。
 
 ## hooks
 
@@ -362,7 +357,7 @@ check-jsonschema --schemafile https://json.schemastore.org/claude-code-settings.
 
 - **`timeout-minutes` を書けません**（[CI にジョブを追加する](#ci-にジョブを追加する)で説明した例外です）。上限は GitHub 既定の 6 時間になり、全体検査も同じです。
 - fork からの PR では `security-events: write` が付与されず、SARIF のアップロードに失敗する可能性があります（[CodeQL](#codeql) と同じ話です）。外部からの PR を受けるようになったら `upload-sarif: false` を渡してください（差分の判定とジョブの成否はそのまま働きます）。
-- `push`（= マージ）では比較対象の base が無いのでスキップされます（`skipped` は `ci` で成功扱いです）。
+- `push`（= マージ）では比較対象の base が無いのでスキップされます（[`ci` でのスキップの扱い](#ci-にジョブを追加する)）。
 
 ### PR に出る「1 configuration not found」
 

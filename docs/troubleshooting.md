@@ -23,15 +23,13 @@ Two protections other than the required check can hold the merge button ([What b
 
 ## Renovate does not create PRs
 
-Look at the run log of the `renovate` workflow on the Actions tab. Almost always `RENOVATE_TOKEN` is unset, expired, or lacking permissions. If the log alone is not enough, produce a verbose log with `gh workflow run renovate.yml --field log_level=debug`.
+If the `renovate` workflow failed, the cause is almost always `RENOVATE_TOKEN` ([When a run fails](renovate.md#when-a-run-fails)). If it succeeded, there was nothing to update unless the `Dependency updates are available` issue is open ([The update list issue](renovate.md#the-update-list-issue)).
 
-When the run succeeds but no PR arrives, look at the `Dependency updates are available` issue ([The update list issue](renovate.md#the-update-list-issue)). If it is not open, there was nothing to update as of the last run (the concurrent PR limit is lifted, so nothing is merely being held back).
+## A scheduled workflow does not run
 
-## The scheduled osv-scanner run does not fire
+Check on the Actions tab whether GitHub has disabled the workflow's schedule ([When the scheduled run stops](ci-jobs.md#when-the-scheduled-run-stops)).
 
-GitHub automatically disables schedule triggers after 60 days without repository activity. Open the `osv-scanner` workflow on the Actions tab and re-enable it if it is disabled ([details](ci-jobs.md#when-the-scheduled-run-stops)).
-
-If it runs but detects nothing, drop `--allow-no-lockfiles` from `scan-args` and run it once. If no lockfile could be read at all the job fails, so you find out on the spot whether something is being missed ([details](ci-jobs.md#it-passes-silently-when-there-is-nothing-to-scan)).
+If osv-scanner runs but detects nothing, see [It passes silently when there is nothing to scan](ci-jobs.md#it-passes-silently-when-there-is-nothing-to-scan).
 
 ## A greyed-out `osv-scanner` appears on the PR
 

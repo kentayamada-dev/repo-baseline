@@ -125,7 +125,7 @@ Things to note:
   gh api --method PATCH repos/OWNER/REPO/code-scanning/default-setup -f state=not-configured
   ```
 
-- On a PR from a fork, `security-events: write` is not granted and uploading the analysis results may fail (unverified). Check this once you start accepting outside PRs, and if it fails, add an `if` to the job to skip it for fork PRs (`skipped` counts as a success in `ci`). In that case, changes from a fork are first analyzed by the run on main after the merge. Skipping the job also leaves the `code_scanning` rule in [main.json](../.github/rulesets/main.json) with no CodeQL results to judge, so check whether the merge is still allowed, and drop that rule as well if it is not.
+- On a PR from a fork, `security-events: write` is not granted and uploading the analysis results may fail (unverified). Check this once you start accepting outside PRs, and if it fails, add an `if` to the job to skip it for fork PRs ([how `ci` treats a skip](#adding-a-job-to-ci)). In that case, changes from a fork are first analyzed by the run on main after the merge. Skipping the job also leaves the `code_scanning` rule in [main.json](../.github/rulesets/main.json) with no CodeQL results to judge, so check whether the merge is still allowed, and drop that rule as well if it is not.
 
 ## actionlint
 
@@ -163,12 +163,7 @@ The `typos` job in [ci.yml](../.github/workflows/ci.yml) checks the whole reposi
 
 The configuration lives in [.typos.toml](../.typos.toml). Two things are set in the initial state.
 
-```toml
-[files]
-ignore-hidden = false
-```
-
-**typos skips files and directories starting with `.` by default.** Without turning that off, all of `.github/` would be out of scope. `.git` itself is listed in [.gitignore](../.gitignore), so it is excluded by the default behavior of honoring gitignore.
+**One is `ignore-hidden = false`, because typos skips files and directories starting with `.` by default.** Without turning that off, all of `.github/` would be out of scope. `.git` itself is listed in [.gitignore](../.gitignore), so it is excluded by the default behavior of honoring gitignore.
 
 The other is `extend-ignore-re`, which excludes the misspelling example in this section (without it, typos flags this very file).
 
@@ -280,7 +275,7 @@ The `setup-script` job in [ci.yml](../.github/workflows/ci.yml) actually runs th
 
 `gh` and `jq` ship with GitHub-hosted runners, so they are not added to [mise.toml](../mise.toml). The workflow's `GITHUB_TOKEN` is enough for authentication.
 
-This job does not run on a private repository (the setup script refuses anything but public, so running it would always fail). A skip counts as a success in `ci`, so PRs are not blocked on a private repository either.
+This job does not run on a private repository (the setup script refuses anything but public, so running it would always fail), which does not block PRs there ([how `ci` treats a skip](#adding-a-job-to-ci)).
 
 ## hooks
 
@@ -362,7 +357,7 @@ Things to note:
 
 - **`timeout-minutes` cannot be written** (the exception covered in [Adding a job to CI](#adding-a-job-to-ci)). The limit becomes GitHub's default of six hours. The same applies to the full scan.
 - On a PR from a fork, `security-events: write` is not granted and the SARIF upload may fail (the same story as [CodeQL](#codeql)). Once you start accepting outside PRs, pass `upload-sarif: false` (the diff determination and the job's pass/fail keep working).
-- On `push` (= a merge) there is no base to compare against, so it is skipped (`skipped` counts as a success in `ci`).
+- On `push` (= a merge) there is no base to compare against, so it is skipped ([how `ci` treats a skip](#adding-a-job-to-ci)).
 
 ### The "1 configuration not found" shown on PRs
 

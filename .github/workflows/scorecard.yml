@@ -28,7 +28,6 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      # Uploading the results to Code scanning.
       security-events: write
       # publish_results proves the run's origin to the Scorecard API via OIDC.
       id-token: write

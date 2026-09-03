@@ -139,7 +139,7 @@ The table listing the updates is Renovate's `table`, with the columns adjusted t
 
 ## Labels on PRs and issues
 
-Update PRs get `dependencies` (`labels` in [renovate.json5](../.github/renovate.json5)). [The update list issue](#the-update-list-issue) gets the same label; [Labels](../README.md#labels) covers who creates it and what to keep in step when changing it.
+Where the `dependencies` label is applied, who creates it, and what to keep in step when changing it are in [Labels](../README.md#labels).
 
 When self-hosting, the PR author is whoever owns `RENOVATE_TOKEN` (usually you), so filtering by `author:app/renovate` as with the hosted version is not possible, which makes this label the only marker.
 
@@ -174,7 +174,7 @@ docker run --rm -v "$PWD:/repo:ro" -w /repo \
 
 ## Settings tailored to this repository
 
-These are the points where [renovate.json5](../.github/renovate.json5) differs from the defaults. Renovate works without any of them, but dropping one either adds manual work or departs from the intent of this setup.
+The settings in [renovate.json5](../.github/renovate.json5) that differ from the defaults and have no section of their own above. Renovate works without any of them, but dropping one either adds manual work or departs from the intent of this setup.
 
 | Setting | Reason | If dropped |
 | --- | --- | --- |
@@ -182,12 +182,7 @@ These are the points where [renovate.json5](../.github/renovate.json5) differs f
 | `rebaseWhen: 'behind-base-branch'` | Being up to date before merging is required, so PRs follow along once the base moves ahead | Bringing a PR whose base moved ahead up to date becomes manual work (Update branch) |
 | `prHourlyLimit: 0` | The run is weekly, so nothing should be carried over by the default limit of two per hour | The third and later PRs are carried over to next week's run |
 | `prConcurrentLimit: 0` | Every update becomes a PR, so that [The update list issue](#the-update-list-issue) is a complete list | Once more than 10 are open the rest are held back and do not appear in the list |
-| `dependencyDashboard: false` | [Why the built-in Dependency Dashboard is not used](#why-the-built-in-dependency-dashboard-is-not-used) | A `Dependency Dashboard` issue is opened, duplicating the hand-rolled one |
-| `pinDigests: true` | [Pinning digests](#pinning-digests) | Only the tag is specified, and a swap of the contents can no longer be tracked |
 | `helpers:pinGitHubActionDigestsToSemver` in `extends` | Keeps the comment beside a pinned SHA at an exact version such as `# v7.0.1` ([Pinning digests](#pinning-digests)) | A moving major tag such as `# v7` is written, and once upstream re-points it the comment no longer names the pinned commit, which [`zizmor`](ci-jobs.md#zizmor) reports as `ref-version-mismatch` |
-| `non-major` in `packageRules` | Groups everything except major into a single PR | A PR is opened per update and the count grows |
-| The `commitMessage*` / `pr*` wording | [PR wording](#pr-wording) | It reverts to the generated default wording, which does not match the automated issues |
-| `fetchChangeLogs: 'off'` | [Body](#body) | Release notes that are never displayed are fetched on every run |
 
 ## What gets updated
 

@@ -23,15 +23,13 @@ gh api repos/OWNER/REPO/commits/main/check-runs --jq '.check_runs[] | "\(.name)\
 
 ## Renovate の PR が作られない
 
-Actions タブの `renovate` ワークフローの実行ログを見ます。`RENOVATE_TOKEN` の未設定・期限切れ・権限不足がほとんどです。ログだけで分からない場合は `gh workflow run renovate.yml --field log_level=debug` で詳細ログを出します。
+`renovate` ワークフローが失敗しているなら、原因はほぼ `RENOVATE_TOKEN` です（[実行が失敗したとき](renovate.ja.md#実行が失敗したとき)）。成功しているなら、`Dependency updates are available` の issue が立っていない限り更新は無かったということです（[更新の一覧の issue](renovate.ja.md#更新の一覧の-issue)）。
 
-実行は成功しているのに PR が来ないときは、`Dependency updates are available` の issue を見ます（[更新の一覧の issue](renovate.ja.md#更新の一覧の-issue)）。立っていなければ、前回の実行の時点で更新が無かったということです（並列 PR 上限は外してあるので、保留されているだけということはありません）。
+## 定期実行のワークフローが動かない
 
-## osv-scanner の定期実行が動かない
+Actions タブで、GitHub がそのワークフローの schedule を止めていないかを確認してください（[定期実行が止まるとき](ci-jobs.ja.md#定期実行が止まるとき)）。
 
-schedule はリポジトリの活動が 60 日間無いと GitHub 側で自動的に止まります。Actions タブで `osv-scanner` ワークフローを開き、無効化されていれば有効化し直してください（[詳細](ci-jobs.ja.md#定期実行が止まるとき)）。
-
-実行はされているのに何も検出されない場合は、`scan-args` から `--allow-no-lockfiles` を外して 1 回走らせます。lockfile を 1 件も読めていなければジョブが落ちるので、取りこぼしかどうかがその場で分かります（[詳細](ci-jobs.ja.md#検査対象が無いときは黙って通ります)）。
+osv-scanner が実行されているのに何も検出されない場合は、[検査対象が無いときは黙って通ります](ci-jobs.ja.md#検査対象が無いときは黙って通ります)を見てください。
 
 ## PR に灰色の `osv-scanner` が出る
 

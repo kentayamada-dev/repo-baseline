@@ -171,7 +171,7 @@ feat!: 設定ファイルの形式を TOML に変更
 
 検証は CI の `pr-title` ジョブが行い、必須チェック `ci` に含まれるため回避できません。落ちた場合は PR タイトルを直せば自動で再検証されます（再 push は不要）。type を増減する場合は [ci.yml](.github/workflows/ci.yml) の `PATTERN` と上の表、[.claude/settings.json](.claude/settings.json) の prompt フックの type 一覧を合わせて直してください。各コピー（ci.yml 内の失敗メッセージも含む）が `PATTERN` と一致することは [hooks](docs/ci-jobs.ja.md#hooks) ジョブが検査するため、直し漏れは CI で落ちます。
 
-再検証が効くのは、`pull_request` の `types` に `edited` を足してあるためです。既定のままだとタイトルを直してもワークフローが起動せず、落ちたままになります。代償としてタイトルの編集ごとに [CodeQL](docs/ci-jobs.ja.md#codeql) まで回りますが、`codeql` だけ `if` でスキップすると、`skipped` を成功として扱うゲートジョブ `ci` が前回の失敗を緑で上書きしてしまうため、そうしていません。
+再検証が効くのは、`pull_request` の `types` に `edited` を足してあるためです。既定のままだとタイトルを直してもワークフローが起動せず、落ちたままになります。代償としてタイトルの編集ごとに [CodeQL](docs/ci-jobs.ja.md#codeql) まで回りますが、`codeql` だけ `if` でスキップすると、[そのスキップが前回の失敗を緑で上書きしてしまう](docs/ci-jobs.ja.md#ci-にジョブを追加する)ため、そうしていません。
 
 GitHub の既定（`COMMIT_OR_PR_TITLE`）はコミットが 1 つだけの PR だとそのコミットのタイトルを使うため、`PR_TITLE` を外すと `pr-title` で検証したタイトルが main に載らないことがあります。このずれは `pr-title` では検出できず（見ているのは PR タイトルで、実際に main に載るものではないため）、[設定のずれの検査](docs/drift-check.ja.md#設定のずれの検査)が拾います。手元で確認するには次を実行します。
 

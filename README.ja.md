@@ -46,7 +46,8 @@
 | [CLAUDE.md](CLAUDE.md) | Claude Code が読み込む指示書。自分のリポジトリの指示書で置き換える |
 | [.claude/settings.json](.claude/settings.json) | Claude Code の設定。下のフックスクリプトをここで配線する |
 | [.claude/hooks/](.claude/hooks) | CLAUDE.md の規則を強制するフックスクリプト |
-| [.claude/skills/docs-check/SKILL.md](.claude/skills/docs-check/SKILL.md) | 重複・ドキュメント陳腐化チェックの手順（`/docs-check` で実行） |
+| [.claude/skills/repo-review/SKILL.md](.claude/skills/repo-review/SKILL.md) | 観点別のリポジトリレビューの手順。セキュリティ、シェルスクリプト、CI、テンプレート、ドキュメント（`/repo-review` で実行） |
+| [.claude/agents/](.claude/agents) | `/repo-review` が観点ごとに並列起動する、読み取り専用のレビュー用サブエージェント |
 | [.claude/tests/](.claude/tests) | フックスクリプトと、それを呼び出す設定のテスト。CI で実行される（[hooks](docs/ci-jobs.ja.md#hooks)） |
 | [mise.toml](mise.toml) | CI で使う検査ツールのバージョンと、同じ検査を手元で回すタスク（`mise run check`） |
 | [.markdownlint-cli2.jsonc](.markdownlint-cli2.jsonc) | Markdown の書式検査 markdownlint-cli2 の設定 |

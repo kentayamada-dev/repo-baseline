@@ -46,7 +46,8 @@ The rest is reference material to look up when you need it.
 | [CLAUDE.md](CLAUDE.md) | Instructions Claude Code reads. Replace it with the instructions for your own repository |
 | [.claude/settings.json](.claude/settings.json) | Claude Code settings, wiring up the hook scripts below |
 | [.claude/hooks/](.claude/hooks) | The hook scripts that enforce the rules in CLAUDE.md |
-| [.claude/skills/docs-check/SKILL.md](.claude/skills/docs-check/SKILL.md) | The duplication and stale-docs check to run (run as `/docs-check`) |
+| [.claude/skills/repo-review/SKILL.md](.claude/skills/repo-review/SKILL.md) | The repository review by perspective — security, shell scripts, CI, template, docs (run as `/repo-review`) |
+| [.claude/agents/](.claude/agents) | The read-only reviewer subagents that `/repo-review` fans out to, one per perspective |
 | [.claude/tests/](.claude/tests) | Tests for the hook scripts and the settings that wire them up, run in CI ([hooks](docs/ci-jobs.md#hooks)) |
 | [mise.toml](mise.toml) | Versions of the check tools used in CI, and the tasks that run the same checks locally (`mise run check`) |
 | [.markdownlint-cli2.jsonc](.markdownlint-cli2.jsonc) | Configuration for markdownlint-cli2, the Markdown format checker |

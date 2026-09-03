@@ -24,7 +24,7 @@ gh workflow run renovate.yml
 | Pull requests: Read and write | PR の作成・更新 |
 | Workflows: Read and write | `.github/workflows/` 配下の更新 |
 | Issues: Read and write | 設定に問題があるときの警告 issue の作成 |
-| Dependabot alerts: Read-only | [セットアップ](../README.ja.md#セットアップ)で有効化した alerts の読み取り。既知の脆弱性がある依存には、次の実行時にまとめ PR とは別の単独の修正 PR が立ちます（Renovate の `vulnerabilityAlerts`。既定で有効）。権限が無いとき Renovate 自身は警告を出して飛ばすだけなので、実行は成功したままになります |
+| Dependabot alerts: Read-only | [セットアップ](../README.ja.md#セットアップ)で有効化した alerts の読み取り。既知の脆弱性がある依存には、次の実行時にまとめ PR とは別の単独の修正 PR が立ちます（Renovate の `vulnerabilityAlerts`。既定で有効ですが [renovate.json5](../.github/renovate.json5) に明示しています）。権限が無いとき Renovate 自身は警告を出して飛ばすだけなので、実行は成功したままになります |
 
 トークンを secret に登録し、実際に動かして確認します（更新があれば PR が作られます）。
 

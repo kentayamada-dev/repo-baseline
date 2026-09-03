@@ -26,7 +26,7 @@ gh workflow run renovate.yml
 | Pull requests: Read and write | Creating and updating PRs |
 | Workflows: Read and write | Updating files under `.github/workflows/` |
 | Issues: Read and write | Opening a warning issue when the configuration has a problem |
-| Dependabot alerts: Read-only | Reading the alerts that [Setup](../README.md#setup) enables. At the next run, a dependency with a known vulnerability gets a fix PR of its own, separate from the grouped update (Renovate's `vulnerabilityAlerts`, on by default). When the permission is missing, Renovate only warns and skips this, so the run still succeeds |
+| Dependabot alerts: Read-only | Reading the alerts that [Setup](../README.md#setup) enables. At the next run, a dependency with a known vulnerability gets a fix PR of its own, separate from the grouped update (Renovate's `vulnerabilityAlerts`, spelled out in [renovate.json5](../.github/renovate.json5) even though it is the default). When the permission is missing, Renovate only warns and skips this, so the run still succeeds |
 
 Register the token as a secret and run once to confirm (a PR is created if there is an update).
 

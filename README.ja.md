@@ -44,8 +44,8 @@
 | [.github/pull_request_template.md](.github/pull_request_template.md) | PR の本文テンプレート |
 | [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE) | issue のテンプレート（Bug report / Task） |
 | [CLAUDE.md](CLAUDE.md) | Claude Code が読み込む指示書。自分のリポジトリの指示書で置き換える |
-| [.claude/settings.json](.claude/settings.json) | Claude Code の設定。下のフックスクリプトをここで配線する |
-| [.claude/hooks/](.claude/hooks) | CLAUDE.md の規則を強制するフックスクリプト |
+| [.claude/settings.json](.claude/settings.json) | Claude Code の設定。破壊的な git コマンドを拒否する権限ルールと、下のフックスクリプトの配線 |
+| [.claude/hooks/](.claude/hooks) | 権限ルールで名指しできない CLAUDE.md の規則を補うフックスクリプト。見えるのは Claude が実行するコマンドだけで、自分のターミナルで打つコマンドは通らない |
 | [.claude/skills/repo-review/SKILL.md](.claude/skills/repo-review/SKILL.md) | 観点別のリポジトリレビューの手順。セキュリティ、シェルスクリプト、CI、テンプレート、ドキュメント（`/repo-review` で実行） |
 | [.claude/agents/](.claude/agents) | `/repo-review` が観点ごとに並列起動する、読み取り専用のレビュー用サブエージェント |
 | [.claude/tests/](.claude/tests) | フックスクリプトと、それを呼び出す設定のテスト。CI で実行される（[hooks](docs/ci-jobs.ja.md#hooks)） |

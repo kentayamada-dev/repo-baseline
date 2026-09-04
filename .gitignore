@@ -1,2 +1,5 @@
 .DS_Store
 .git
+
+# Checkpoint written by /repo-review (see .claude/skills/repo-review/SKILL.md)
+.claude/review/

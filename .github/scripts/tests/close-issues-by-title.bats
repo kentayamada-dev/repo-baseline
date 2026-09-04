@@ -50,6 +50,14 @@ setup() {
   assert_gh_called 'issue close 13'
 }
 
+# The counterpart of the same test in upsert-issue.bats: an issue somebody else opened
+# under this title must not be closed with "the check passed".
+@test "looks only at issues github-actions[bot] opened" {
+  open_issue 12 'External links are broken'
+  run -0 run_script close-issues-by-title.sh 'External links are broken' 'the check passed'
+  assert_gh_called "issue list --state open --limit 100 --author github-actions[bot]"
+}
+
 @test "fails when gh does" {
   mkdir -p "${BATS_TEST_TMPDIR}/broken"
   printf '#!/bin/sh\nexit 1\n' >"${BATS_TEST_TMPDIR}/broken/gh"

@@ -101,6 +101,14 @@ upsert() {
   assert_gh_not_called 'issue edit 43'
 }
 
+# Anyone can open an issue under one of these titles, so the search is narrowed to the
+# bot's own. GitHub is what applies the filter, so what a test can pin is that it is asked
+# for: the stub answers with whatever open_issue set, filter or no filter.
+@test "looks only at issues github-actions[bot] opened" {
+  run -0 upsert skip
+  assert_gh_called "issue list --state open --limit 100 --author github-actions[bot]"
+}
+
 @test "fails when gh does" {
   mkdir -p "${BATS_TEST_TMPDIR}/broken"
   printf '#!/bin/sh\nexit 1\n' >"${BATS_TEST_TMPDIR}/broken/gh"

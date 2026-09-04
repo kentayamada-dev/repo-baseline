@@ -68,7 +68,7 @@ The issue gets the `dependencies` label ([Labels](../README.md#labels)); the bod
 
 In other words, **there are updates to deal with only while the issue is in the issue list**. That determination only happens during a run, so besides the cron the workflow also runs when Renovate's own update PRs are merged. Merging all the PRs closes the issue in that run.
 
-The list covers open PRs whose branch name starts with `renovate/` (`branchPrefix` is left at its default; the `dependencies` label is not used as the marker because people can apply it too). The issue operations use the workflow's `GITHUB_TOKEN`, not `RENOVATE_TOKEN`. When the run fails this job does not run and the list stays as it was.
+The list covers open PRs from a branch of this repository whose name starts with `renovate/` (`branchPrefix` is left at its default). Neither the `dependencies` label nor a fork's branch name is used as the marker, because both are anyone's to choose. The issue operations use the workflow's `GITHUB_TOKEN`, not `RENOVATE_TOKEN`. When the run fails this job does not run and the list stays as it was.
 
 ### Why the built-in Dependency Dashboard is not used
 

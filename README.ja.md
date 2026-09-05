@@ -45,7 +45,7 @@
 | [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE) | issue のテンプレート（Bug report / Task） |
 | [CLAUDE.md](CLAUDE.md) | Claude Code が読み込む指示書。自分のリポジトリの指示書で置き換える |
 | [.claude/settings.json](.claude/settings.json) | Claude Code の設定。破壊的な git コマンドを拒否する権限ルールと、下のフックスクリプトの配線 |
-| [.claude/hooks/](.claude/hooks) | 権限ルールで名指しできない CLAUDE.md の規則を補うフックスクリプト。見えるのは Claude が実行するコマンドだけで、自分のターミナルで打つコマンドは通らない |
+| [.claude/hooks/](.claude/hooks) | 権限ルールで名指しできない CLAUDE.md の規則を補うフックスクリプト。見えるのは Claude の操作だけで、自分のターミナルでの操作は通らない |
 | [.claude/skills/repo-review/SKILL.md](.claude/skills/repo-review/SKILL.md) | 観点別のリポジトリレビューの手順。セキュリティ、シェルスクリプト、CI、テンプレート、ドキュメント（`/repo-review` で実行） |
 | [.claude/agents/](.claude/agents) | `/repo-review` が観点ごとに並列起動する、読み取り専用のレビュー用サブエージェント |
 | [.claude/tests/](.claude/tests) | フックスクリプトと、それを呼び出す設定のテスト。CI で実行される（[hooks](docs/ci-jobs.ja.md#hooks)） |
@@ -170,7 +170,7 @@ feat!: 設定ファイルの形式を TOML に変更
 
 タイトルを縛るのは、squash 時のコミットタイトルを常に PR タイトルにする設定（`squash_merge_commit_title=PR_TITLE`）により、**main に残るコミットのタイトルが PR タイトル**になるためです。縛るのはタイトルだけで、本文は検査しません。ローカルで積んだコミットメッセージは squash コミットの本文に連結されて main に残ります。
 
-検証は CI の `pr-title` ジョブが行い、必須チェック `ci` に含まれるため回避できません。落ちた場合は PR タイトルを直せば自動で再検証されます（再 push は不要）。type を増減する場合は [ci.yml](.github/workflows/ci.yml) の `PATTERN` と上の表を合わせて直してください。各コピー（ci.yml 内の失敗メッセージも含む）が `PATTERN` と一致することは [hooks](docs/ci-jobs.ja.md#hooks) ジョブが検査するため、直し漏れは CI で落ちます。
+検証は CI の `pr-title` ジョブが行い、必須チェック `ci` に含まれるため回避できません。落ちた場合は PR タイトルを直せば自動で再検証されます（再 push は不要）。type を増減する場合は [ci.yml](.github/workflows/ci.yml) の `PATTERN` と上の表を合わせて直してください。各コピー（ci.yml 内の失敗メッセージも含む）が `PATTERN` と一致することは [script-tests](docs/ci-jobs.ja.md#script-tests) ジョブが検査するため、直し漏れは CI で落ちます。
 
 再検証が効くのは、`pull_request` の `types` に `edited` を足してあるためです。既定のままだとタイトルを直してもワークフローが起動せず、落ちたままになります。代償としてタイトルの編集ごとに [CodeQL](docs/ci-jobs.ja.md#codeql) まで回りますが、`codeql` だけ `if` でスキップすると、[そのスキップが前回の失敗を緑で上書きしてしまう](docs/ci-jobs.ja.md#ci-にジョブを追加する)ため、そうしていません。
 

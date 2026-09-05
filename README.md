@@ -45,7 +45,7 @@ The rest is reference material to look up when you need it.
 | [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE) | Issue templates (bug report / task) |
 | [CLAUDE.md](CLAUDE.md) | Instructions Claude Code reads. Replace it with the instructions for your own repository |
 | [.claude/settings.json](.claude/settings.json) | Claude Code settings: the permission rules that deny the destructive git commands outright, and the wiring for the hook scripts below |
-| [.claude/hooks/](.claude/hooks) | Hook scripts covering the rules in CLAUDE.md that a permission rule cannot name. They see the commands Claude runs, not the ones you type in your own terminal |
+| [.claude/hooks/](.claude/hooks) | Hook scripts covering the rules in CLAUDE.md that a permission rule cannot name. They see what Claude does, not what you do in your own terminal |
 | [.claude/skills/repo-review/SKILL.md](.claude/skills/repo-review/SKILL.md) | The repository review by perspective — security, shell scripts, CI, template, docs (run as `/repo-review`) |
 | [.claude/agents/](.claude/agents) | The read-only reviewer subagents that `/repo-review` fans out to, one per perspective |
 | [.claude/tests/](.claude/tests) | Tests for the hook scripts and the settings that wire them up, run in CI ([hooks](docs/ci-jobs.md#hooks)) |
@@ -170,7 +170,7 @@ feat!: switch the config file format to TOML
 
 Titles are constrained because the setting that always uses the PR title as the commit title on squash (`squash_merge_commit_title=PR_TITLE`) means **the PR title becomes the title of the commit that lands on main**. Only the title is constrained; the body is not checked. The commit messages you stacked locally are concatenated into the body of the squash commit and left on main.
 
-The validation is done by CI's `pr-title` job, and since it is part of the required check `ci` it cannot be bypassed. When it fails, fixing the PR title re-runs the check automatically (no new push needed). If you add or remove types, fix the `PATTERN` in [ci.yml](.github/workflows/ci.yml) and the table above together. The [hooks](docs/ci-jobs.md#hooks) job compares every copy (the failure message in ci.yml included) against the `PATTERN`, so a missed one fails CI.
+The validation is done by CI's `pr-title` job, and since it is part of the required check `ci` it cannot be bypassed. When it fails, fixing the PR title re-runs the check automatically (no new push needed). If you add or remove types, fix the `PATTERN` in [ci.yml](.github/workflows/ci.yml) and the table above together. The [script-tests](docs/ci-jobs.md#script-tests) job compares every copy (the failure message in ci.yml included) against the `PATTERN`, so a missed one fails CI.
 
 Re-validation works because `edited` was added to the `types` of `pull_request`. With the default, fixing the title does not start the workflow and it stays failed. The cost is that [CodeQL](docs/ci-jobs.md#codeql) also runs on every title edit, but skipping only `codeql` with an `if` would let the skip [paint the previous failure green](docs/ci-jobs.md#adding-a-job-to-ci), so that is not done.
 

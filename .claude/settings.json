@@ -7,12 +7,7 @@
     "sessionUrl": false
   },
   "permissions": {
-    "allow": [
-      "Bash(git commit -F *)",
-      "Bash(git push -u origin HEAD)",
-      "Bash(git push)",
-      "Bash(gh pr create *)"
-    ],
+    "allow": [],
     "deny": [
       "Read(**/.env)",
       "Read(~/.ssh/**)",

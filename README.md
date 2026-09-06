@@ -44,7 +44,7 @@ The rest is reference material to look up when you need it.
 | [.github/pull_request_template.md](.github/pull_request_template.md) | The PR body template |
 | [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE) | Issue templates (bug report / task) |
 | [CLAUDE.md](CLAUDE.md) | Instructions Claude Code reads. Replace it with the instructions for your own repository |
-| [.claude/settings.json](.claude/settings.json) | Claude Code settings: the permission rules that deny the destructive git commands outright, and the wiring for the hook scripts below |
+| [.claude/settings.json](.claude/settings.json) | Claude Code settings: the permission rules that keep the credential files out of reach, and the wiring for the hook scripts below |
 | [.claude/hooks/](.claude/hooks) | Hook scripts covering the rules in CLAUDE.md that a permission rule cannot name. They see what Claude does, not what you do in your own terminal |
 | [.claude/skills/repo-review/SKILL.md](.claude/skills/repo-review/SKILL.md) | The repository review by perspective — security, shell scripts, CI, template, docs (run as `/repo-review`) |
 | [.claude/agents/](.claude/agents) | The read-only reviewer subagents that `/repo-review` fans out to, one per perspective |

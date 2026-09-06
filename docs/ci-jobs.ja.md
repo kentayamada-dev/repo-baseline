@@ -281,7 +281,7 @@ private リポジトリではこのジョブを走らせません（セットア
 
 [ci.yml](../.github/workflows/ci.yml) の `hooks` ジョブが、[.claude/tests/](../.claude/tests) にある [bats](https://bats-core.readthedocs.io/) のテストで、隣の [.claude/hooks/](../.claude/hooks) にあるフックスクリプトを検査します。フックは標準入力に JSON でツール呼び出しを受け取り、標準出力に JSON で答えを返すフィルタなので、テストはツール呼び出しを 1 つ流し込んで答えを読むだけです。コマンドは [mise.toml](../mise.toml) の `check:hooks` タスクにあります。
 
-フックに残された領分は狭く、それは意図した結果です。[main.json](../.github/rulesets/main.json) の ruleset は、main への非早送り push と、pull request を経由しないすべての push を、bypass 対象なしで拒否します。つまり force push も main に着地するコミットも、害になる場所では既に不可能です。書式の崩れた PR タイトルも、`pr-title` が必須チェックの一部である以上マージできません。破壊的な git コマンドは [.claude/settings.json](../.claude/settings.json) の `deny` が名指しで塞いでいます。これらの手前にフックを置くのは、既に閉まっている扉に鍵をもう 1 つ掛けることです。残るのは権限ルールでは名指しできない規則であり、それが [remind-bilingual-pair.sh](../.claude/hooks/remind-bilingual-pair.sh) の領分です。判断の材料が、書き込んだツールではなく書き込まれたファイルの方にあるからです。
+フックに残された領分は狭く、それは意図した結果です。[main.json](../.github/rulesets/main.json) の ruleset は、main への非早送り push と、pull request を経由しないすべての push を、bypass 対象なしで拒否します。つまり force push も main に着地するコミットも、害になる場所では既に不可能です。書式の崩れた PR タイトルも、`pr-title` が必須チェックの一部である以上マージできません。これらの手前にフックを置くのは、既に閉まっている扉に鍵をもう 1 つ掛けることです。残るのは権限ルールでは名指しできない規則であり、それが [remind-bilingual-pair.sh](../.claude/hooks/remind-bilingual-pair.sh) の領分です。判断の材料が、書き込んだツールではなく書き込まれたファイルの方にあるからです。
 
 テストが押さえるのは当たり前の場合ではなく境目です。パスはプロジェクトディレクトリからの相対で判定するため、リポジトリの README は対の片方でも `scripts/README.md` はそうではなく、`READMEs.md` はそもそも README ではなく、プロジェクトの外のファイルはフックの管轄外です。`CLAUDE_PROJECT_DIR` がなければ相対の基準自体がないので、推測せず黙ります。ここで罠になるのはファイルシステム直下の README で、それも固定してあります。残りはフックがしてはならないことです。フックが走るのは編集の後なので、何も言えないツール呼び出し（file_path がない、パスが文字列でない、標準入力がそもそも JSON でない）は、落とさずそのまま通さなければなりません。
 

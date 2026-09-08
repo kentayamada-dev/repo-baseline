@@ -48,7 +48,7 @@ Note that `ci` treats `skipped` jobs as successes. Skipping with a job-level `if
 Things to note:
 
 - Always write `permissions` and `timeout-minutes` on a job, and add `persist-credentials: false` to `actions/checkout`. [`ghalint`](#ghalint) enforces this. The exception is a job that calls a reusable workflow with `uses`, where `timeout-minutes` cannot be written ([`osv-scanner-diff`](#osv-scanner) is one).
-- Where possible, put the job's command in a `check:<job>` task in [mise.toml](../mise.toml) and have the job run that, so the check stays reproducible locally ([Reproducing the checks locally](#reproducing-the-checks-locally)).
+- Where possible, put the job's command in a `check:<job>` task in [mise.toml](../mise.toml) and have the job run that, so the check stays reproducible locally ([Reproducing the checks locally](#reproducing-the-checks-locally)). The tools it needs are installed by the [`setup-mise`](#installing-and-verifying-the-tools) action.
 - Do not add a `paths` filter to the whole workflow. On an out-of-scope PR, `ci` is never reported and the PR stays unmergeable, waiting for the required check. To narrow the scope, use a job-level `if`.
 - When renaming the `ci` job, change `context` in [main.json](../.github/rulesets/main.json) to match.
 - **Do not make CI report from anything other than GitHub Actions.** Alongside `context`, `integration_id` (GitHub Actions' App ID) is specified, and a check of the same name reported by another App or token is ignored. When migrating to an external CI, this value has to change to the new App ID as well, or the PR gets stuck waiting for the required check ([how to check](troubleshooting.md#troubleshooting)).
@@ -87,11 +87,26 @@ mise resolves the download source from the [aqua](https://aquaproj.github.io/) r
 
 The version of mise itself is pinned with the `version` input of [mise-action](https://github.com/jdx/mise-action) (Renovate reads that input out of the box). The action itself is pinned to a commit SHA like the others. There is no `mise.lock` (see the comment in [mise.toml](../mise.toml) for why).
 
+That mise-action step is the same in every job that installs tools, so it lives in the [`setup-mise`](../.github/actions/setup-mise/action.yml) composite action and each job passes only the tools it needs. What the job runs afterwards stays in the job.
+
+```yaml
+      - uses: actions/checkout@<commit sha> # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-mise
+        with:
+          tools: typos
+      - name: Check for typos
+        run: mise run --skip-tools check:typos
+```
+
+`$/` is the [self-repository syntax](https://github.blog/changelog/2026-07-30-reference-same-repository-actions-with-self-repository-syntax/): the action is loaded from the commit the workflow is running, not from the working tree `actions/checkout` produced, so a step that writes to `.github/actions/` cannot swap it out. [zizmor](#zizmor) requires it. [actionlint](#actionlint) does not know the syntax yet and reads it as a reference with the ref left out, so `check:actionlint` in [mise.toml](../mise.toml) ignores that one error message; drop the `-ignore` flag once actionlint supports it. The checkout stays in the job either way, because the checks read the repository.
+
 Cache writes are limited to pushes to main with `cache_save: ${{ github.event_name == 'push' }}`. Caches are branch-scoped, and one saved on a PR branch lingers for seven days after the merge without anyone using it. The cache on main is readable from every branch, so PRs that do not touch [mise.toml](../mise.toml) still hit it and lose no speed.
 
 ### Reproducing the checks locally
 
-The commands the check jobs run are defined once, as tasks in [mise.toml](../mise.toml) named after the jobs, and each job's `run:` step calls its task with `mise run --skip-tools check:<job>` (the flag keeps mise from installing every tool in mise.toml — the job's mise-action step already installed what its task needs). The same tasks reproduce CI at your desk, with [mise](https://mise.jdx.dev/) as the only prerequisite:
+The commands the check jobs run are defined once, as tasks in [mise.toml](../mise.toml) named after the jobs, and each job's `run:` step calls its task with `mise run --skip-tools check:<job>` (the flag keeps mise from installing every tool in mise.toml — the [`setup-mise`](#installing-and-verifying-the-tools) step before it already installed what its task needs). The same tasks reproduce CI at your desk, with [mise](https://mise.jdx.dev/) as the only prerequisite:
 
 ```bash
 mise run check              # every check that works from a local checkout
@@ -133,7 +148,7 @@ The `actionlint` job in [ci.yml](../.github/workflows/ci.yml) checks the workflo
 
 How the shell checks divide up: **`run:` inside a workflow is covered by actionlint (and the shellcheck it calls), `*.sh` / `*.bash` in the repository by the [shellcheck](#shellcheck) job, and `RUN` in a Dockerfile by [hadolint](#hadolint) (and the ShellCheck bundled with it)**.
 
-**This job installs shellcheck alongside actionlint**, because actionlint silently skips checking `run:` when shellcheck is not on PATH. Likewise, once you start writing Python in `run:`, add pyflakes to [mise.toml](../mise.toml) and to `install_args`.
+**This job installs shellcheck alongside actionlint**, because actionlint silently skips checking `run:` when shellcheck is not on PATH. Likewise, once you start writing Python in `run:`, add pyflakes to [mise.toml](../mise.toml) and to the job's `tools` input.
 
 ## shellcheck
 
@@ -226,7 +241,7 @@ Four things differ from the defaults (besides `gitignore: true`, which keeps wha
 
 The `ghalint` job in [ci.yml](../.github/workflows/ci.yml) checks workflow definitions **from a security angle**. Over-broad permissions, leftover tokens — configurations that work but are dangerous — fail the check. Even within that same security angle it covers different ground than [zizmor](#zizmor), so both are included.
 
-The policies are listed in [ghalint's documentation](https://github.com/suzuki-shunsuke/ghalint#policies). The ones you will hit when adding a job — `permissions` and `timeout-minutes` on every job, `persist-credentials: false` on `actions/checkout` — are covered in [Adding a job to CI](#adding-a-job-to-ci). Action references must also be 40-character commit SHAs, and `secrets: inherit` and workflow-level or job-level secret envs are forbidden.
+The policies are listed in [ghalint's documentation](https://github.com/suzuki-shunsuke/ghalint#policies). The ones you will hit when adding a job — `permissions` and `timeout-minutes` on every job, `persist-credentials: false` on `actions/checkout` — are covered in [Adding a job to CI](#adding-a-job-to-ci). Action references must also be 40-character commit SHAs, and `secrets: inherit` and workflow-level or job-level secret envs are forbidden (`github.token` in a job's `env` counts as one; pass it on the step that needs it). The policies for composite actions are a separate command, so the `check:ghalint` task runs `ghalint run-action` after `ghalint run`.
 
 `persist-credentials: false` is what removes the token checkout leaves in `.git/config`. Leaving it there makes it readable from every later step, including any Docker image that runs in one. If you add a job that needs to push, make an exception for just that job in `ghalint.yaml`.
 

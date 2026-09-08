@@ -35,7 +35,12 @@ git ls-files -z '*.sh' '*.bash' \
 
 [tasks."check:actionlint"]
 description = "Lint workflow files"
-run = "actionlint -color"
+# -ignore: actionlint does not know the `$/` self-repository reference yet and reads
+# it as a reference with the ref left out. Drop the flag once it knows the syntax
+# (docs/ci-jobs.md#installing-and-verifying-the-tools).
+run = '''
+actionlint -color -ignore 'specifying action "\$/.+" in invalid format'
+'''
 
 [tasks."check:shellcheck"]
 description = "Lint shell scripts"
@@ -65,7 +70,14 @@ run = "lychee --offline --include-fragments --no-progress ."
 
 [tasks."check:ghalint"]
 description = "Lint workflow files for security policies"
-run = "ghalint run"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+ghalint run
+# The policies for the workflows and the ones for the actions they call are
+# separate commands.
+ghalint run-action
+'''
 
 [tasks."check:zizmor"]
 description = "Audit workflow files for security issues"

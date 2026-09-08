@@ -48,7 +48,7 @@ jobs:
 注意点:
 
 - ジョブには `permissions` と `timeout-minutes` を必ず書き、`actions/checkout` には `persist-credentials: false` を付けてください。[`ghalint`](#ghalint) が強制します。例外は再利用可能ワークフローを `uses` で呼ぶジョブで、そこには `timeout-minutes` を書けません（[`osv-scanner-diff`](#osv-scanner) が該当します）。
-- 可能なら、ジョブのコマンドは [mise.toml](../mise.toml) の `check:<ジョブ名>` タスクに置き、ジョブはそれを呼ぶ形にしてください。検査を手元で再現できる状態が保たれます（[検査を手元で再現する](#検査を手元で再現する)）。
+- 可能なら、ジョブのコマンドは [mise.toml](../mise.toml) の `check:<ジョブ名>` タスクに置き、ジョブはそれを呼ぶ形にしてください。検査を手元で再現できる状態が保たれます（[検査を手元で再現する](#検査を手元で再現する)）。必要なツールは [`setup-mise`](#ツールの導入と検証) アクションが入れます。
 - ワークフロー全体に `paths` フィルタを付けないこと。対象外の PR で `ci` が報告されず、必須チェック待ちのままマージ不能になります。絞るならジョブ側の `if` を使います。
 - `ci` ジョブの名前を変えるときは、[main.json](../.github/rulesets/main.json) の `context` も合わせて変更してください。
 - **CI を GitHub Actions 以外から報告するようにしないこと。** `context` と一緒に `integration_id`（GitHub Actions の App ID）を指定してあり、他の App やトークンが報告した同名のチェックは無視されます。外部 CI へ移行する場合はこの値も移行先の App ID に変えないと、必須チェック待ちで止まります（[確認方法](troubleshooting.ja.md#トラブルシューティング)）。
@@ -87,11 +87,26 @@ lockfile（`package-lock.json` や `go.mod` など）は、置いた時点で os
 
 mise 本体のバージョンは [mise-action](https://github.com/jdx/mise-action) の `version` 入力で固定しています（Renovate がこの入力を標準で見ます）。action 自体は他と同じく commit SHA 固定です。`mise.lock` は置いていません（理由は [mise.toml](../mise.toml) のコメントを参照）。
 
+この mise-action のステップはツールを入れるジョブすべてで同一なので、[`setup-mise`](../.github/actions/setup-mise/action.yml) composite action に置き、ジョブ側は必要なツールだけを渡します。そのあと何を実行するかはジョブに残ります。
+
+```yaml
+      - uses: actions/checkout@<commit sha> # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-mise
+        with:
+          tools: typos
+      - name: Check for typos
+        run: mise run --skip-tools check:typos
+```
+
+`$/` は [self-repository 構文](https://github.blog/changelog/2026-07-30-reference-same-repository-actions-with-self-repository-syntax/)です。action を `actions/checkout` が作った作業ツリーからではなく、そのワークフローが動いているコミットから読み込むため、`.github/actions/` に書き込むステップがあっても差し替えられません。[zizmor](#zizmor) がこの形を要求します。[actionlint](#actionlint) はまだこの構文を知らず、ref を省いた参照と読んで落とすので、[mise.toml](../mise.toml) の `check:actionlint` でそのエラーメッセージだけを無視しています（actionlint が対応したら `-ignore` は外してください）。いずれにせよ checkout はジョブに残ります。検査自体がリポジトリの中身を読むためです。
+
 キャッシュの書き込みは `cache_save: ${{ github.event_name == 'push' }}` として main への push のときだけに限っています。キャッシュはブランチスコープで、PR ブランチに保存したものはマージ後は誰も使わないまま 7 日間残るためです。main のキャッシュは全ブランチから読めるので、[mise.toml](../mise.toml) を変えない PR ではヒットし、速度は落ちません。
 
 ### 検査を手元で再現する
 
-検査ジョブが実行するコマンドは、ジョブと同名のタスクとして [mise.toml](../mise.toml) に一度だけ定義してあり、各ジョブの `run:` は `mise run --skip-tools check:<ジョブ名>` でそれを呼びます（このフラグは mise が mise.toml の全ツールを入れようとするのを止めます。ジョブが必要とする分は mise-action のステップが入れ終わっています）。同じタスクで CI を手元で再現できます。前提は [mise](https://mise.jdx.dev/) だけです。
+検査ジョブが実行するコマンドは、ジョブと同名のタスクとして [mise.toml](../mise.toml) に一度だけ定義してあり、各ジョブの `run:` は `mise run --skip-tools check:<ジョブ名>` でそれを呼びます（このフラグは mise が mise.toml の全ツールを入れようとするのを止めます。ジョブが必要とする分は直前の [`setup-mise`](#ツールの導入と検証) のステップが入れ終わっています）。同じタスクで CI を手元で再現できます。前提は [mise](https://mise.jdx.dev/) だけです。
 
 ```bash
 mise run check              # 手元のチェックアウトで動く検査すべて
@@ -133,7 +148,7 @@ mise run check:shellcheck   # 1 つのジョブの検査だけ
 
 シェルの検査の分担: **ワークフロー内の `run:` は actionlint（が呼ぶ shellcheck）、リポジトリ内の `*.sh` / `*.bash` は [shellcheck](#shellcheck) ジョブ、Dockerfile の `RUN` は [hadolint](#hadolint)（に同梱の ShellCheck）** が見ます。
 
-**このジョブでは actionlint と一緒に shellcheck も入れています。** actionlint は shellcheck が PATH に無いと `run:` の検査を黙って飛ばすためです。同様に、`run:` に Python を書くようになったら pyflakes を [mise.toml](../mise.toml) と `install_args` に足してください。
+**このジョブでは actionlint と一緒に shellcheck も入れています。** actionlint は shellcheck が PATH に無いと `run:` の検査を黙って飛ばすためです。同様に、`run:` に Python を書くようになったら pyflakes を [mise.toml](../mise.toml) とジョブの `tools` 入力に足してください。
 
 ## shellcheck
 
@@ -226,7 +241,7 @@ CI ではこれに `--mode plain` を足し、出力を `tee` で控えます（
 
 [ci.yml](../.github/workflows/ci.yml) の `ghalint` ジョブが、ワークフロー定義を**セキュリティの観点**で検査します。権限の与えすぎやトークンの残留といった、動いてしまうけれども危ない書き方を落とします。同じセキュリティ観点でも [zizmor](#zizmor) とは拾う範囲が違うため、両方入れてあります。
 
-ポリシーの一覧は [ghalint のドキュメント](https://github.com/suzuki-shunsuke/ghalint#policies)にあります。ジョブを追加するときに引っかかるもの — 全ジョブへの `permissions` と `timeout-minutes`、`actions/checkout` への `persist-credentials: false` — は [CI にジョブを追加する](#ci-にジョブを追加する)で説明済みです。ほかに、action の参照は 40 桁の commit SHA であることが求められ、`secrets: inherit` とワークフロー / ジョブの env への secret の設定は禁じられます。
+ポリシーの一覧は [ghalint のドキュメント](https://github.com/suzuki-shunsuke/ghalint#policies)にあります。ジョブを追加するときに引っかかるもの — 全ジョブへの `permissions` と `timeout-minutes`、`actions/checkout` への `persist-credentials: false` — は [CI にジョブを追加する](#ci-にジョブを追加する)で説明済みです。ほかに、action の参照は 40 桁の commit SHA であることが求められ、`secrets: inherit` とワークフロー / ジョブの env への secret の設定は禁じられます（ジョブの `env` に置いた `github.token` もこれに当たります。必要なステップ側に書いてください）。composite action 向けのポリシーは別コマンドのため、`check:ghalint` タスクでは `ghalint run` のあとに `ghalint run-action` も走らせています。
 
 `persist-credentials: false` は、checkout が `.git/config` に残すトークンを消す指定です。残すと後続のすべてのステップ（そこで動く Docker イメージも含む）から読めてしまいます。push が必要なジョブを足す場合は、そのジョブだけ `ghalint.yaml` で例外にしてください。
 

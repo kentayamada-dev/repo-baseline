@@ -29,6 +29,15 @@ upsert() {
   run -2 run_script upsert-issue.sh --title "${TITLE}" --body-file "${BODY}" --label maintenance
 }
 
+# Left to the shift, a value that is not there runs past the end of the arguments, and
+# set -e turns that into an exit with nothing said about the option that caused it.
+@test "refuses an option whose value is left out" {
+  for option in --title --body-file --comment-file --label --on-existing; do
+    run -2 run_script upsert-issue.sh "${option}"
+    [[ "${output}" == *"${option} needs a value"* ]]
+  done
+}
+
 @test "refuses an unknown option and an unknown --on-existing value" {
   run -2 run_script upsert-issue.sh --title "${TITLE}" --body-file "${BODY}" \
     --label maintenance --on-existing skip --wat
@@ -54,6 +63,17 @@ upsert() {
   run -0 upsert skip
   assert_gh_called "issue create --title ${TITLE} --body-file ${BODY}"
   assert_gh_called 'issue edit https://github.com/owner/repo/issues/7 --add-label maintenance'
+  [[ "${output}" == *'opened https://github.com/owner/repo/issues/7'* ]]
+}
+
+# --comment-file and the body the issue is opened with are not interchangeable: with no
+# issue open yet there is nothing to comment on, so both modes open one from the body.
+@test "comment and edit open the issue from the body file when none is open" {
+  run -0 upsert comment --comment-file "${COMMENT}"
+  run -0 upsert edit
+  assert_gh_called "issue create --title ${TITLE} --body-file ${BODY}"
+  assert_gh_not_called "${COMMENT}"
+  assert_gh_not_called 'issue comment'
 }
 
 @test "warns instead of failing when the label cannot be added" {

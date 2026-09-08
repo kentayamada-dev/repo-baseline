@@ -16,6 +16,15 @@ setup() {
   run -2 run_script close-issues-by-title.sh 'A title' 'A comment' extra
 }
 
+# Neither is worth carrying on with, and an empty title is the quiet one: it matches no
+# issue, so the run would close nothing and still succeed.
+@test "refuses an empty title and an empty comment" {
+  open_issue 12 'External links are broken'
+  run -2 run_script close-issues-by-title.sh '' 'the check passed'
+  run -2 run_script close-issues-by-title.sh 'External links are broken' ''
+  assert_gh_not_called 'issue close'
+}
+
 @test "closes the issue with the given title, leaving the comment on it" {
   open_issue 12 'External links are broken'
   run -0 run_script close-issues-by-title.sh 'External links are broken' 'the check passed'

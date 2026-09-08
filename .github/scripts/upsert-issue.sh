@@ -37,26 +37,41 @@ COMMENT_FILE=""
 LABEL=""
 ON_EXISTING=""
 
+# Every option below takes a value, and the shift past it would run off the end of the
+# arguments when it is left out, which set -e turns into an exit without a word about
+# why. Called before the value is read, so the message names the option.
+require_value() {
+  [[ $# -ge 2 ]] || {
+    echo "${1} needs a value" >&2
+    exit 2
+  }
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --title)
-      TITLE="${2:-}"
+      require_value "$@"
+      TITLE="$2"
       shift 2
       ;;
     --body-file)
-      BODY_FILE="${2:-}"
+      require_value "$@"
+      BODY_FILE="$2"
       shift 2
       ;;
     --comment-file)
-      COMMENT_FILE="${2:-}"
+      require_value "$@"
+      COMMENT_FILE="$2"
       shift 2
       ;;
     --label)
-      LABEL="${2:-}"
+      require_value "$@"
+      LABEL="$2"
       shift 2
       ;;
     --on-existing)
-      ON_EXISTING="${2:-}"
+      require_value "$@"
+      ON_EXISTING="$2"
       shift 2
       ;;
     -h | --help)
@@ -125,5 +140,6 @@ if [[ -n "$existing" ]]; then
 fi
 
 url="$(gh issue create --title "$TITLE" --body-file "$BODY_FILE")"
+echo "opened ${url}"
 gh issue edit "$url" --add-label "$LABEL" ||
   echo "::warning::Could not add the ${LABEL} label. Check whether it still exists (./scripts/sync-repo-config.sh can create it)"

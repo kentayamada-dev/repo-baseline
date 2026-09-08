@@ -15,7 +15,8 @@
 #   ./scripts/sync-repo-config.sh            # apply (updates a ruleset of the same name)
 #   ./scripts/sync-repo-config.sh --dry-run  # only print what would be sent (changes nothing)
 #   ./scripts/sync-repo-config.sh --check    # only check whether the current settings match
-#                                            # (lists the differences and exits 1 on drift)
+#                                            # (lists what differs or cannot be read, and
+#                                            # exits 1 on either)
 #
 # Environment variables:
 #   REPO           target repository (default: derived from the origin remote)
@@ -484,7 +485,14 @@ done < <(jq -r '.conditions.ref_name.include[]?' "${RULESET_FILES[@]}" | sort -u
 # See the comment in check_settings for why includes_parents=false. The jq below prints
 # every id whose name matches, so a parent ruleset slipping in would yield two lines and
 # turn the target of the following PUT into a broken string.
-existing_rulesets="$(gh api "repos/${REPO}/rulesets?includes_parents=false" 2>/dev/null || echo '[]')"
+#
+# A failure here is not read as "no ruleset exists": that would send the run down the
+# create path and leave a second ruleset of the same name behind. Nothing has been
+# written yet at this point, so it stops instead.
+existing_rulesets="$(gh api "repos/${REPO}/rulesets?includes_parents=false")" || {
+  echo "could not fetch the list of rulesets. Nothing was applied." >&2
+  exit 1
+}
 
 applying=true
 for i in "${!RULESET_FILES[@]}"; do
@@ -558,6 +566,10 @@ if [[ "$REPO_SETTINGS" == true ]]; then
     fi
   done
 fi
+
+# Every write is done. Only reads follow, so a failure from here on must not claim that
+# the configuration was half applied.
+applying=false
 
 echo "done. current settings:"
 rulesets_now="$(gh api "repos/${REPO}/rulesets?includes_parents=false")"

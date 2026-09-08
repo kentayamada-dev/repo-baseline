@@ -42,6 +42,43 @@ run_sync() {
   REPO=owner/repo bash "${REPO_COPY}/scripts/sync-repo-config.sh" "$@"
 }
 
+# run_sync_unpinned [<argument> ...]
+#
+# Without REPO, so the run resolves the repository through `gh repo view` instead.
+run_sync_unpinned() {
+  bash "${REPO_COPY}/scripts/sync-repo-config.sh" "$@"
+}
+
+# run_sync_on_path <directory> [<argument> ...]
+#
+# run_sync with PATH replaced by the directory, which is how a test states that a
+# command the script requires is missing. The replacement goes through env so that it
+# never reaches the test's own PATH, which bats itself runs on.
+run_sync_on_path() {
+  local path="$1"
+  shift
+  env PATH="${path}" REPO=owner/repo bash "${REPO_COPY}/scripts/sync-repo-config.sh" "$@"
+}
+
+# minimal_path [<command> ...] -> a directory to hand to run_sync_on_path
+#
+# Holds the named commands and nothing else, except the two the script reaches for
+# before it checks its requirements (bash, dirname). `gh` links to the stub, anything
+# else to the real command.
+minimal_path() {
+  local dir="${BATS_TEST_TMPDIR}/minimal-bin" c
+  rm -rf "${dir}"
+  mkdir -p "${dir}"
+  for c in bash dirname "$@"; do
+    if [[ "${c}" == gh ]]; then
+      ln -s "${BATS_TEST_TMPDIR}/bin/gh" "${dir}/gh"
+    else
+      ln -s "$(command -v "${c}")" "${dir}/${c}"
+    fi
+  done
+  printf '%s' "${dir}"
+}
+
 # fixture_path <endpoint> -> the fixture base path for that endpoint
 #
 # Everything outside [A-Za-z0-9._-] becomes _, so an endpoint such as
@@ -75,6 +112,12 @@ case "${1:-}" in
     if [[ "${GH_AUTH_FAILS:-false}" == true ]]; then
       exit 1
     fi
+    exit 0
+    ;;
+  repo)
+    # `gh repo view`, which the script falls back to when REPO is not set. The name it
+    # answers with is the one the fixtures are keyed by.
+    echo owner/repo
     exit 0
     ;;
   api)

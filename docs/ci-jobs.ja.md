@@ -308,7 +308,7 @@ private リポジトリではこのジョブを走らせません（セットア
 
 ## Claude Code 設定の定期検査
 
-[claude-settings.yml](../.github/workflows/claude-settings.yml) が、[.claude/settings.json](../.claude/settings.json) を [SchemaStore](https://www.schemastore.org/) にある Claude Code 設定のスキーマと突き合わせます。使うのは [issue-forms](../README.ja.md#issue-のテンプレート) ジョブと同じ [check-jsonschema](https://github.com/python-jsonschema/check-jsonschema) です。Claude Code は知らないキーを黙って無視するため、キーの綴りを間違えても実行時には何も落ちません — そのキーで加えたつもりの挙動が、ただ静かに欠けるだけです。気づけるのは検証だけです。
+[claude-settings.yml](../.github/workflows/claude-settings.yml) が、毎日（07:30 JST）と main への push 時、および手動実行（`workflow_dispatch`）で、[.claude/settings.json](../.claude/settings.json) を [SchemaStore](https://www.schemastore.org/) にある Claude Code 設定のスキーマと突き合わせます。使うのは [issue-forms](../README.ja.md#issue-のテンプレート) ジョブと同じ [check-jsonschema](https://github.com/python-jsonschema/check-jsonschema) です。Claude Code は知らないキーを黙って無視するため、キーの綴りを間違えても実行時には何も落ちません — そのキーで加えたつもりの挙動が、ただ静かに欠けるだけです。気づけるのは検証だけです。
 
 ジョブの形は 2 つの制約が決めています。このスキーマは check-jsonschema に同梱されていないので実行時に SchemaStore から取得し、中身は Claude Code のリリースに追従するため、こちらのコードを変えなくても結果が変わりえます（[こうした検査を定期実行にしている理由](#ci-の検査ジョブ)）。また、スキーマは未知のトップレベルキーを許容する（`additionalProperties` が `false` なのは `sandbox` や `permissions` などの入れ子の中だけ）ため、トップレベルの綴り間違いは素通りします。
 

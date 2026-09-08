@@ -4,6 +4,7 @@ description: Review the whole repository from one or more perspectives — secur
 disable-model-invocation: true
 argument-hint: "[security|shell|ci|template|docs|all]"
 allowed-tools:
+  - Agent
   - Read
   - Grep
   - Glob

@@ -9,16 +9,21 @@ setup() {
 
 # registrations -> "<event> <script name>" for every registered hook command
 registrations() {
-  jq -r '.hooks | to_entries[] | .key as $event
+  jq -r '(.hooks // {}) | to_entries[] | .key as $event
     | .value[].hooks[] | select(.type == "command") | .command
     | capture("(?<script>[^/]+\\.sh)").script
     | "\($event) \(.)"' "${SETTINGS_FILE}"
 }
 
 # script_names -> the file name of every hook script present
+#
+# Both this and registrations have to answer with nothing once the hooks are
+# deleted, so that the pair still agrees: an unmatched glob is the pattern
+# itself, and a settings file with no hooks block has no key to walk.
 script_names() {
   local path
   for path in "${HOOKS_DIR}"/*.sh; do
+    [ -e "${path}" ] || continue
     basename "${path}"
   done
 }

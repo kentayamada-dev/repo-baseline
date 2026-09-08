@@ -2,7 +2,7 @@
 
 [English](drift-check.md) | **日本語**
 
-[セットアップ](../README.ja.md#セットアップ)のスクリプトが入れる設定は、GitHub の画面からいつでも変えられます。変えられても、スクリプトに設定を足したまま再実行を忘れても、`ci` は緑のままです。そこで [repo-settings.yml](../.github/workflows/repo-settings.yml) が毎日（07:00 JST）と main への push 時に `--check` を実行し、現在の設定が定義とずれていれば落ちます。`ci` のジョブではなく定期実行なのは、コードを変えなくても結果が変わるためです（[こうした検査を定期実行にしている理由](ci-jobs.ja.md#ci-の検査ジョブ)）。
+[セットアップ](../README.ja.md#セットアップ)のスクリプトが入れる設定は、GitHub の画面からいつでも変えられます。変えられても、スクリプトに設定を足したまま再実行を忘れても、`ci` は緑のままです。そこで [repo-settings.yml](../.github/workflows/repo-settings.yml) が毎日（07:00 JST）と main への push 時、および手動実行（`workflow_dispatch`）で `--check` を実行し、現在の設定が定義とずれていれば落ちます。`ci` のジョブではなく定期実行なのは、コードを変えなくても結果が変わるためです（[こうした検査を定期実行にしている理由](ci-jobs.ja.md#ci-の検査ジョブ)）。
 
 ```bash
 ./scripts/sync-repo-config.sh --check

@@ -8,11 +8,13 @@
 
 イメージはジョブの `container:` に指定してあり、ステップはその中で走ります（ラッパーの action は挟みません）。ジョブコンテナ特有の注意点 2 つは、ワークフロー側で対処してあります。1 つはコンテナを `--user root` で動かしていることです。イメージの非 root ユーザーでは runner が作るファイルに書けず、拾った内容を後続のジョブへ渡す `$GITHUB_OUTPUT` も、runner が `HOME` に向ける `/github/home` も書けません。もう 1 つはステップに `shell: bash` を指定していることです。ジョブコンテナでは `run:` の既定シェルが `sh` になります。
 
-手動で走らせるには次を実行します（`--field log_level=debug` でログを詳細にできます）。
+手動で走らせるには次を実行します。
 
 ```bash
 gh workflow run renovate.yml
 ```
+
+（`--field log_level=debug` でログを詳細にできます。）
 
 ## トークンの登録
 

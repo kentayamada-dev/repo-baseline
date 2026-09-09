@@ -38,6 +38,7 @@
 | [.github/workflows/link-check.yml](.github/workflows/link-check.yml) | ドキュメントの外部リンクの定期検査（毎日 / [外部リンクの定期検査](docs/ci-jobs.ja.md#外部リンクの定期検査)） |
 | [.github/workflows/claude-settings.yml](.github/workflows/claude-settings.yml) | Claude Code 設定のスキーマ照合の定期検査（毎日 / [Claude Code 設定の定期検査](docs/ci-jobs.ja.md#claude-code-設定の定期検査)） |
 | [.github/workflows/renovate.yml](.github/workflows/renovate.yml) | Renovate の実行（[更新の一覧の issue](docs/renovate.ja.md#更新の一覧の-issue)） |
+| [.github/actions/setup-mise/action.yml](.github/actions/setup-mise/action.yml) | 検査ツールを mise で入れる composite action。ツールを使うジョブすべてが呼びます（[ツールの導入と検証](docs/ci-jobs.ja.md#ツールの導入と検証)） |
 | [.github/scripts/](.github/scripts) | 上記の定期実行ワークフローが、落ちた検査を issue として報告し、取り下げるために呼ぶスクリプト |
 | [.github/scripts/tests/](.github/scripts/tests) | 上記スクリプトのテスト。CI で実行される（[script-tests](docs/ci-jobs.ja.md#script-tests)） |
 | [.github/renovate.json5](.github/renovate.json5) | Renovate の設定 |

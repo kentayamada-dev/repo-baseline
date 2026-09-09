@@ -1,4 +1,7 @@
 .DS_Store
+
+# typos walks hidden paths (`ignore-hidden = false` in .typos.toml), so without this
+# it would scan the object database.
 .git
 
 # Checkpoint written by /repo-review (see .claude/skills/repo-review/SKILL.md)

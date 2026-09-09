@@ -33,6 +33,14 @@ fi
 title="$1"
 comment="$2"
 
+# An empty title matches no issue, so the run would close nothing and still succeed: a
+# caller whose TITLE went missing looks green while the issue it meant to retract stays
+# open. upsert-issue.sh turns an empty --title down for the same reason.
+if [[ -z "$title" || -z "$comment" ]]; then
+  echo "the title and the comment cannot be empty" >&2
+  exit 2
+fi
+
 # Captured rather than piped straight into the loop so that a failing gh aborts the
 # run: inside a process substitution its exit status would go unseen.
 numbers="$(gh issue list --state open --limit 100 --author 'github-actions[bot]' --json number,title |

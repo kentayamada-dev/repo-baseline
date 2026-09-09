@@ -37,10 +37,11 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     container:
-      image: renovate/renovate:44.65.5@sha256:4e10f76a79f1c597f427f83c788a9f5b14a6295784c4cb68307b89b0a954abce
+      image: renovate/renovate:44.70.2@sha256:d2da014f1f4f47f7648b77e73fb887d064c298f6897cb22a787c8c53eb03ed7f
       # The image's non-root user cannot write the files the runner creates (docs/renovate.md).
       options: --user root
     outputs:
+      aborted: ${{ steps.run.outputs.aborted }}
       lookup_failed: ${{ steps.run.outputs.lookup_failed }}
       lookup_details: ${{ steps.run.outputs.lookup_details }}
     steps:
@@ -59,8 +60,25 @@ jobs:
             echo "::error::The RENOVATE_TOKEN secret is not set. See docs/renovate.md."
             exit 1
           fi
+          # A run Renovate cut short still exits 0, so this message in the log is what
+          # tells the two apart (docs/renovate.md#when-a-run-stops-partway). It is matched
+          # rather than the summary's "result" line, which loses the space the pattern
+          # would have to include once LOG_FORMAT is json.
+          cut_short='Repository has changed during renovation'
           log="${HOME}/renovate.log"
           renovate 2>&1 | tee "${log}"
+          # The second attempt starts over from a fresh clone instead of resuming, so it
+          # works from the repository as it stands by then and what stopped the first one
+          # is over. Hence a warning here and an issue only when this one stops too.
+          if grep -qF "${cut_short}" "${log}"; then
+            echo "::warning::Renovate stopped partway through the run because the repository changed under it. Running it once more."
+            renovate 2>&1 | tee "${log}"
+          fi
+          if grep -qF "${cut_short}" "${log}"; then
+            echo 'aborted=true' >>"${GITHUB_OUTPUT}"
+          else
+            echo 'aborted=false' >>"${GITHUB_OUTPUT}"
+          fi
           if ! grep -q 'Package lookup failures' "${log}"; then
             echo 'lookup_failed=false' >>"${GITHUB_OUTPUT}"
             exit 0
@@ -141,6 +159,61 @@ jobs:
         run: |
           ./.github/scripts/close-issues-by-title.sh "${TITLE}" \
             "Closing because the run passed: ${RUN_URL}"
+
+  abort:
+    # Renovate reports a run it cut short as a success, so notify closes its issue
+    # instead; this job is the only report of a run the retry did not save
+    # (docs/renovate.md#when-a-run-stops-partway).
+    needs: [renovate]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Open or update the issue
+        if: needs.renovate.outputs.aborted == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: A Renovate run stopped partway
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          DOC_URL: ${{ github.server_url }}/${{ github.repository }}/blob/main/docs/renovate.md
+        run: |
+          set -eo pipefail
+          {
+            echo "Renovate stopped partway through the run twice in a row and left the rest of it undone. **The run itself succeeded; the updates it had not reached yet got no PR, and the PRs it had not reached were not brought up to date.**"
+            echo
+            echo "Run log: ${RUN_URL}"
+            echo
+            echo "The usual cause is a merge landing while the run is in progress, which makes Renovate abandon the rest of the run"
+            echo "(see \"When a run stops partway\" in [\`docs/renovate.md\`](${DOC_URL})). It is not a problem with the configuration or the token. Both attempts of this run hit it, so re-run once the repository has settled."
+            echo
+            echo '```bash'
+            echo 'gh workflow run renovate.yml'
+            echo '```'
+            echo
+            echo "Once a run finishes without stopping, this issue closes automatically."
+          } >"${RUNNER_TEMP}/issue.md"
+          ./.github/scripts/upsert-issue.sh \
+            --title "${TITLE}" \
+            --body-file "${RUNNER_TEMP}/issue.md" \
+            --label maintenance \
+            --on-existing edit
+
+      - name: Close the issue when a run finishes
+        if: needs.renovate.outputs.aborted == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: A Renovate run stopped partway
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          ./.github/scripts/close-issues-by-title.sh "${TITLE}" \
+            "Closing because the run finished without stopping: ${RUN_URL}"
 
   lookup:
     needs: [renovate]

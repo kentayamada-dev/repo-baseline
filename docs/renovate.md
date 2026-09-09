@@ -50,6 +50,18 @@ Creating and closing the issue uses the workflow's `GITHUB_TOKEN` (`issues: writ
 
 **The automatic disabling of the schedule cannot be caught by this notification.** GitHub [disables the schedule after 60 days without repository activity](ci-jobs.md#when-the-scheduled-run-stops), and since no run happens, no issue is opened either. GitHub's deactivation email is the only clue (see the comment in [renovate.yml](../.github/workflows/renovate.yml)).
 
+## When a run stops partway
+
+**A run that stops partway through is run once more, and only if that also stops is an `A Renovate run stopped partway` issue opened** (the retry in the `renovate` job, the issue in the `abort` job of [renovate.yml](../.github/workflows/renovate.yml)). Renovate abandons the rest of a run when the repository changes under it: a push rejected as stale, or a branch or commit that is no longer where it expected. What usually does that is a merge landing while the run is in progress — merging an update PR included, because [Setup](../README.md#setup) has GitHub delete the head branch on merge, and that is a branch the run is looking at. Whatever it had not reached yet is simply not done, so those PRs are neither created nor brought up to date.
+
+Nothing about this looks like a failure. Renovate logs `Repository has changed during renovation - aborting` at info level and exits 0 (the exit code turns non-zero only when something was logged at error level or above), so the `renovate` job passes, `notify` sees a success and closes its own issue, and `dashboard` lists whichever PRs happen to exist. With a weekly run, nothing else would come along for a week.
+
+The second attempt starts over from a fresh clone rather than resuming, so it works from the repository as it stands by then, and the change that stopped the first attempt is over. That is why a single stop is not worth an issue: it leaves a warning annotation on the run instead, which is what to look at to see how often this happens.
+
+The issue gets the `maintenance` label; the body holds the run log URL and the single command to run once the repository has settled. While the same issue is already open the body is rewritten (only the latest run matters), and once a run finishes without stopping it closes automatically.
+
+The mechanism is scraping the run log, as in [When a dependency cannot be resolved](#when-a-dependency-cannot-be-resolved), and both the retry and the issue rest on that one message. Should Renovate reword it, neither happens and a run that stops goes back to being silent.
+
 ## When a dependency cannot be resolved
 
 **When the latest version of some dependencies could not be fetched, a `Some dependencies cannot be resolved` issue is opened** (the `lookup` job in [renovate.yml](../.github/workflows/renovate.yml)). This failure is quiet: Renovate itself succeeds, update PRs are created normally for the dependencies it could resolve, and only the unresolved ones quietly stop getting updates.

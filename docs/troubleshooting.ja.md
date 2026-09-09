@@ -23,7 +23,7 @@ gh api repos/OWNER/REPO/commits/main/check-runs --jq '.check_runs[] | "\(.name)\
 
 ## Renovate の PR が作られない
 
-`renovate` ワークフローが失敗しているなら、原因はほぼ `RENOVATE_TOKEN` です（[実行が失敗したとき](renovate.ja.md#実行が失敗したとき)）。成功しているなら、`Dependency updates are available` の issue が立っていない限り更新は無かったということです（[更新の一覧の issue](renovate.ja.md#更新の一覧の-issue)）。
+`renovate` ワークフローが失敗しているなら、原因はほぼ `RENOVATE_TOKEN` です（[実行が失敗したとき](renovate.ja.md#実行が失敗したとき)）。成功しているなら、`Dependency updates are available` の issue が立っていない限り更新は無かったということです（[更新の一覧の issue](renovate.ja.md#更新の一覧の-issue)）。成功しているのに途中で止まっていた場合は、専用の issue がそれを知らせます（[実行が途中で止まったとき](renovate.ja.md#実行が途中で止まったとき)）。
 
 ## 定期実行のワークフローが動かない
 

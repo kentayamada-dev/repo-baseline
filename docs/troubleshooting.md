@@ -23,7 +23,7 @@ Two protections other than the required check can hold the merge button ([What b
 
 ## Renovate does not create PRs
 
-If the `renovate` workflow failed, the cause is almost always `RENOVATE_TOKEN` ([When a run fails](renovate.md#when-a-run-fails)). If it succeeded, there was nothing to update unless the `Dependency updates are available` issue is open ([The update list issue](renovate.md#the-update-list-issue)).
+If the `renovate` workflow failed, the cause is almost always `RENOVATE_TOKEN` ([When a run fails](renovate.md#when-a-run-fails)). If it succeeded, there was nothing to update unless the `Dependency updates are available` issue is open ([The update list issue](renovate.md#the-update-list-issue)). A run that succeeded but stopped partway says so through its own issue instead ([When a run stops partway](renovate.md#when-a-run-stops-partway)).
 
 ## A scheduled workflow does not run
 

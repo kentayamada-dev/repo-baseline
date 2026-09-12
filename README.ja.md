@@ -203,7 +203,7 @@ shfmt の注意点:
 - **フラグを 1 つでも渡すと shfmt は `.editorconfig` を読みません。** シェルスクリプトの書式はこの指定だけで決まります。redirect の前後に空白を入れる `-sr` などは既存の書き方に合わせて付けていません。変えるならこのフラグに足します。
 - **`;` で区切って 1 行に並べた複数の文は、行に分けて書き直されます。** `cmd || { echo "..." >&2; exit 1; }` のような 1 行ガードも展開されます。無効にするフラグは無いので、リポジトリ内のシェルスクリプトはこの形に揃えてあります。
 
-editorconfig-checker と shfmt は、他の検査ツールと同じく本体を mise で入れて実行しています（[ツールの導入と検証](docs/ci-jobs.ja.md#ツールの導入と検証)、バージョンは [mise.toml](mise.toml)）。**editorconfig-checker のコマンド名は `ec` です**（[mise.toml](mise.toml) に書く `editorconfig-checker` は [aqua](https://aquaproj.github.io/) レジストリでのパッケージ名で、バイナリの名前とは違います）。
+editorconfig-checker と shfmt は、他の検査ツールと同じく本体を mise で入れて実行しています（[ツールの導入と検証](docs/ci-jobs.ja.md#ツールの導入と検証)、バージョンは [mise.toml](mise.toml)）。
 
 #### 2 つの例外
 

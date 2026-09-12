@@ -203,7 +203,7 @@ Things to note about shfmt:
 - **Passing even one flag makes shfmt ignore `.editorconfig`.** The formatting of shell scripts is decided by these options alone. Options such as `-sr`, which puts spaces around redirects, are left off to match the existing style. To change that, add to these flags.
 - **Multiple statements put on one line separated by `;` are rewritten onto separate lines.** One-line guards such as `cmd || { echo "..." >&2; exit 1; }` are expanded too. There is no flag to disable it, so every shell script in the repository is written in that expanded form.
 
-editorconfig-checker and shfmt are installed with mise and run like the other check tools ([Installing and verifying the tools](docs/ci-jobs.md#installing-and-verifying-the-tools), versions in [mise.toml](mise.toml)). **The command name for editorconfig-checker is `ec`** (the `editorconfig-checker` written in [mise.toml](mise.toml) is the package name in the [aqua](https://aquaproj.github.io/) registry, which differs from the binary name).
+editorconfig-checker and shfmt are installed with mise and run like the other check tools ([Installing and verifying the tools](docs/ci-jobs.md#installing-and-verifying-the-tools), versions in [mise.toml](mise.toml)).
 
 #### Two exceptions
 
